@@ -1,35 +1,41 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
-	"github.com/rs/zerolog"
-	"io"
-	"os"
+	"github.com/onflow/flow-emulator/storage/memstore"
+	sdk "github.com/onflow/flow-go-sdk"
+	"github.com/onflow/flowkit/v2"
+	"github.com/onflow/flowkit/v2/deps"
+	jsFlow "github.com/onflowser/flow-cli-wasm/js"
+	"github.com/onflowser/flow-cli-wasm/logger"
 	"syscall/js"
 
 	"github.com/onflow/flow-emulator/emulator"
-	flowgo "github.com/onflow/flow-go/model/flow"
+	"github.com/onflow/flowkit/v2/gateway"
 )
 
 type Config struct {
-	Verbose   bool
-	LogFormat string // "text" or "json". Defaults to "json" if "logs" writer is used.
+	Verbose    bool
+	LogFormat  string // "text" or "json". Defaults to "json" if "logs" writer is used.
+	FileSystem flowkit.ReaderWriter
+	Prompter   deps.Prompter
 }
 
-type WasmEmulator struct {
-	config     Config
-	blockchain *emulator.Blockchain
-	logger     *zerolog.Logger
-	cachedLogs *CacheLogWriter
+type FlowWasm struct {
+	config    Config
+	state     *flowkit.State
+	gateway   *gateway.EmulatorGateway
+	logger    *logger.Logger
+	kit       *flowkit.Flowkit
+	installer *deps.DependencyInstaller
 }
 
 func main() {
-	fmt.Println("Starting emulator")
-
-	w := NewWasmEmulator(Config{
-		Verbose:   true,
-		LogFormat: "text",
+	w := New(Config{
+		Verbose:    true,
+		LogFormat:  "text",
+		FileSystem: jsFlow.NewFileSystem(js.Global().Get("flowFileSystem")),
 	})
 
 	// Mount the function on the JavaScript global object.
@@ -40,28 +46,60 @@ func main() {
 	select {}
 }
 
-func NewWasmEmulator(config Config) *WasmEmulator {
-	logger, cacheWriter := initLogger(config)
+func New(config Config) *FlowWasm {
+	l := logger.NewLogger(logger.Config{
+		Verbose:   config.Verbose,
+		LogFormat: config.LogFormat,
+	})
+	s := memstore.New()
 
-	blockchain, err := emulator.New(
-		emulator.WithLogger(*logger),
+	g := gateway.NewEmulatorGatewayWithOpts(
+		&gateway.EmulatorKey{
+			PublicKey: emulator.DefaultServiceKey().AccountKey().PublicKey,
+			SigAlgo:   emulator.DefaultServiceKeySigAlgo,
+			HashAlgo:  emulator.DefaultServiceKeyHashAlgo,
+		},
+		gateway.WithEmulatorOptions(
+			emulator.WithLogger(*l.Zerolog()),
+			emulator.WithStore(s),
+			emulator.WithTransactionValidationEnabled(false),
+			emulator.WithStorageLimitEnabled(false),
+			emulator.WithTransactionFeesEnabled(false),
+		),
 	)
+
+	configFilePaths := []string{
+		"flow.json",
+	}
+	state, err := flowkit.Load(configFilePaths, config.FileSystem)
+	if err != nil {
+		panic(err)
+	}
+
+	network, err := state.Networks().ByName("emulator")
+	if err != nil {
+		panic(err)
+	}
+
+	kit := flowkit.NewFlowkit(state, *network, g, l)
+
+	installer, err := deps.NewDependencyInstaller(state, config.Prompter)
 
 	if err != nil {
 		panic(err)
 	}
 
-	return &WasmEmulator{
-		config:     config,
-		blockchain: blockchain,
-		logger:     logger,
-		cachedLogs: cacheWriter,
+	return &FlowWasm{
+		config:    config,
+		gateway:   g,
+		logger:    l,
+		kit:       kit,
+		installer: installer,
 	}
 }
 
-func (w *WasmEmulator) GetAccount(this js.Value, args []js.Value) interface{} {
-	address := flowgo.HexToAddress(args[0].String())
-	account, err := w.blockchain.GetAccount(address)
+func (w *FlowWasm) GetAccount(this js.Value, args []js.Value) interface{} {
+	account, err := w.gateway.GetAccount(context.Background(), sdk.HexToAddress(args[0].String()))
 
 	if err != nil {
 		panic(err)
@@ -74,63 +112,12 @@ func (w *WasmEmulator) GetAccount(this js.Value, args []js.Value) interface{} {
 	}
 }
 
-func (w *WasmEmulator) GetLogs(this js.Value, args []js.Value) interface{} {
-	fmt.Println("Cache size", len(w.cachedLogs.logs))
-
-	res, err := json.Marshal(&w.cachedLogs.logs)
+func (w *FlowWasm) GetLogs(this js.Value, args []js.Value) interface{} {
+	res, err := json.Marshal(w.logger.LogsHistory())
 
 	if err != nil {
 		panic(err)
 	}
 
 	return string(res)
-}
-
-func initLogger(config Config) (*zerolog.Logger, *CacheLogWriter) {
-
-	level := zerolog.InfoLevel
-	if config.Verbose {
-		level = zerolog.DebugLevel
-	}
-	zerolog.MessageFieldName = "msg"
-
-	cacheWriter := NewCacheLogWriter()
-
-	writer := zerolog.MultiLevelWriter(
-		NewTextWriter(),
-		cacheWriter,
-	)
-
-	logger := zerolog.New(writer).With().Timestamp().Logger().Level(level)
-
-	return &logger, cacheWriter
-}
-
-func NewTextWriter() zerolog.ConsoleWriter {
-	writer := zerolog.ConsoleWriter{Out: os.Stdout}
-	writer.FormatMessage = func(i interface{}) string {
-		if i == nil {
-			return ""
-		}
-		return fmt.Sprintf("%-44s", i)
-	}
-
-	return writer
-}
-
-type CacheLogWriter struct {
-	logs []string
-}
-
-func NewCacheLogWriter() *CacheLogWriter {
-	return &CacheLogWriter{
-		logs: make([]string, 0),
-	}
-}
-
-var _ io.Writer = &CacheLogWriter{}
-
-func (c *CacheLogWriter) Write(p []byte) (n int, err error) {
-	c.logs = append(c.logs, string(p))
-	return len(p), nil
 }
