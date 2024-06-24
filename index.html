@@ -1,0 +1,14 @@
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <script src="wasm_exec.js"></script>
+    <script>
+        const go = new Go();
+        WebAssembly.instantiateStreaming(fetch("flow-cli.wasm"), go.importObject).then((result) => {
+            go.run(result.instance);
+            console.log("GetAccount result:", window.GetAccount("0xf8d6e0586b0a20c7"))
+        });
+    </script>
+</head>
+<body></body>
+</html>
