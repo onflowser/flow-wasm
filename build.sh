@@ -4,4 +4,4 @@ if [ ! -f ./wasm_exec.js ]; then
     curl https://raw.githubusercontent.com/golang/go/go1.22.3/misc/wasm/wasm_exec.js > wasm_exec.js
 fi
 
-CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -tags=no_cgo -o flow-cli.wasm main.go
+CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -tags=no_cgo -o flow.wasm main.go

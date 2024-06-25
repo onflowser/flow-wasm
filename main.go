@@ -41,6 +41,7 @@ func main() {
 	// Mount the function on the JavaScript global object.
 	js.Global().Set("GetAccount", js.FuncOf(w.GetAccount))
 	js.Global().Set("GetLogs", js.FuncOf(w.GetLogs))
+	js.Global().Set("Install", js.FuncOf(w.Install))
 
 	// Prevent the function from returning, which is required in a wasm module
 	select {}
@@ -96,6 +97,16 @@ func New(config Config) *FlowWasm {
 		kit:       kit,
 		installer: installer,
 	}
+}
+
+func (w *FlowWasm) Install(this js.Value, args []js.Value) interface{} {
+	err := w.installer.Install()
+
+	if err != nil {
+		panic(err)
+	}
+
+	return map[string]interface{}{}
 }
 
 func (w *FlowWasm) GetAccount(this js.Value, args []js.Value) interface{} {

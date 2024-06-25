@@ -12,12 +12,12 @@
         window.lightningFs = fs;
         window.pfs = fs.promises;
 
-        const dir = '/test-clone-2'
+        const dir = '/flow-nft-scaffold'
         await git.clone({
             fs,
             http,
             dir,
-            url: 'https://github.com/chasefleming/fcl-next-scaffold',
+            url: 'https://github.com/onflowser/flow-nft-scaffold',
             corsProxy: 'https://cors.isomorphic-git.org',
             ref: 'main',
             singleBranch: true,
@@ -42,10 +42,8 @@
         window.flowFileSystem = new FileSystem(fs.promises)
 
         const go = new Go();
-        WebAssembly.instantiateStreaming(fetch("flow-cli.wasm"), go.importObject).then((result) => {
-            go.run(result.instance);
-            console.log("GetAccount result:", window.GetAccount("0xf8d6e0586b0a20c7"))
-        });
+        const wasm = await WebAssembly.instantiateStreaming(fetch("flow.wasm"), go.importObject);
+        await go.run(wasm.instance);
     </script>
 </head>
 <body></body>
