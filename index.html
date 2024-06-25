@@ -12,12 +12,12 @@
         window.lightningFs = fs;
         window.pfs = fs.promises;
 
-        const dir = '/flow-nft-scaffold'
+        const dir = '/flowkit-previewnet-network-missing'
         await git.clone({
             fs,
             http,
             dir,
-            url: 'https://github.com/onflowser/flow-nft-scaffold',
+            url: 'https://github.com/bartolomej/flowkit-previewnet-network-missing',
             corsProxy: 'https://cors.isomorphic-git.org',
             ref: 'main',
             singleBranch: true,
