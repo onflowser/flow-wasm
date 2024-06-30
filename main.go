@@ -6,6 +6,7 @@ import (
 	"github.com/onflow/flow-emulator/storage/memstore"
 	sdk "github.com/onflow/flow-go-sdk"
 	"github.com/onflow/flowkit/v2"
+	"github.com/onflow/flowkit/v2/config"
 	"github.com/onflow/flowkit/v2/deps"
 	jsFlow "github.com/onflowser/flow-cli-wasm/js"
 	"github.com/onflowser/flow-cli-wasm/logger"
@@ -84,7 +85,11 @@ func New(config Config) *FlowWasm {
 
 	kit := flowkit.NewFlowkit(state, *network, g, l)
 
-	installer, err := deps.NewDependencyInstaller(state, config.Prompter)
+	installer, err := deps.NewDependencyInstaller(
+		state,
+		config.Prompter,
+		deps.WithGateways(jsGateways()),
+	)
 
 	if err != nil {
 		panic(err)
@@ -96,6 +101,20 @@ func New(config Config) *FlowWasm {
 		logger:    l,
 		kit:       kit,
 		installer: installer,
+	}
+}
+
+func jsGateways() map[string]gateway.Gateway {
+	emulatorGateway := jsFlow.NewGateway(js.Global().Get("emulator-gateway"))
+	testnetGateway := jsFlow.NewGateway(js.Global().Get("testnet-gateway"))
+	mainnetGateway := jsFlow.NewGateway(js.Global().Get("mainnet-gateway"))
+	previewnetGateway := jsFlow.NewGateway(js.Global().Get("previewnet-gateway"))
+
+	return map[string]gateway.Gateway{
+		config.EmulatorNetwork.Name:   emulatorGateway,
+		config.TestnetNetwork.Name:    testnetGateway,
+		config.MainnetNetwork.Name:    mainnetGateway,
+		config.PreviewnetNetwork.Name: previewnetGateway,
 	}
 }
 

@@ -5,6 +5,7 @@ go 1.22
 toolchain go1.22.3
 
 require (
+	github.com/onflow/cadence v1.0.0-preview.34
 	github.com/onflow/flow-emulator v1.0.0-preview.32
 	github.com/onflow/flow-go-sdk v1.0.0-preview.36
 	github.com/onflow/flowkit/v2 v2.0.0-stable-cadence-alpha.24.0.20240618003932-da49a83e32a8
@@ -130,7 +131,6 @@ require (
 	github.com/multiformats/go-varint v0.0.7 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/onflow/atree v0.7.0-rc.2 // indirect
-	github.com/onflow/cadence v1.0.0-preview.34 // indirect
 	github.com/onflow/crypto v0.25.1 // indirect
 	github.com/onflow/flow-core-contracts/lib/go/contracts v1.3.0 // indirect
 	github.com/onflow/flow-core-contracts/lib/go/templates v1.3.0 // indirect
@@ -238,6 +238,6 @@ replace github.com/gofrs/flock => github.com/onflowser/flock v0.0.0-202406240842
 
 replace github.com/gballet/go-libpcsclite => github.com/onflowser/go-libpcsclite v0.0.0-20240624101912-3df75172119f
 
-replace github.com/onflow/flowkit/v2 => github.com/onflowser/flowkit/v2 v2.0.0-20240624114059-1b9106852e5e
+replace github.com/onflow/flowkit/v2 => github.com/onflowser/flowkit/v2 v2.0.0-20240625131443-0cb26ff12ce9
 
 replace github.com/gosuri/uilive => github.com/onflowser/uilive v0.0.0-20240624125236-14e1343c8a0e

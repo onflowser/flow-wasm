@@ -1938,8 +1938,8 @@ github.com/onflowser/fastcache v0.0.0-20240623124046-8cfb78009570 h1:+0XrkIsbk4R
 github.com/onflowser/fastcache v0.0.0-20240623124046-8cfb78009570/go.mod h1:AmC+Nzz1+3G2eCPapF6UcsnkThDcMsQicp4xDukwJYI=
 github.com/onflowser/flock v0.0.0-20240624084233-3da549c22379 h1:pX5zIGDQgWu8oEo3rzcz6+YxI1G+naoz0Z1tPnae0PY=
 github.com/onflowser/flock v0.0.0-20240624084233-3da549c22379/go.mod h1:Rb/IBxwaR1TLnAkFKLRJj/aB3o4uBpxZhXJXRmjusQo=
-github.com/onflowser/flowkit/v2 v2.0.0-20240624114059-1b9106852e5e h1:pTCip282DDPwpoFY0jSweXzTvtZx1N9dOdvWNUuw6wo=
-github.com/onflowser/flowkit/v2 v2.0.0-20240624114059-1b9106852e5e/go.mod h1:89ipBRMJE9nWRimoqaa02+l6kCQuBiVyzszI6N3a6Sk=
+github.com/onflowser/flowkit/v2 v2.0.0-20240625131443-0cb26ff12ce9 h1:I40PmvuDC+coqTfbDmzLpQda6cJWKkz1qNpiaVOMzKg=
+github.com/onflowser/flowkit/v2 v2.0.0-20240625131443-0cb26ff12ce9/go.mod h1:89ipBRMJE9nWRimoqaa02+l6kCQuBiVyzszI6N3a6Sk=
 github.com/onflowser/go-ethereum v0.0.0-20240512134415-f22642c7b788 h1:W9BA7Jd01yKgu9DfjrRqP3ob+iQtafUwyg01x4NL0y0=
 github.com/onflowser/go-ethereum v0.0.0-20240512134415-f22642c7b788/go.mod h1:cE/gEUkAffhwbVmMJYz+t1dAfVNHNwZCgc3BWtZxBGY=
 github.com/onflowser/go-libpcsclite v0.0.0-20240624101912-3df75172119f h1:7hrX1bwHtGQgj/nVPmLWbt5phMq++3uMxyESgTYSl5c=
