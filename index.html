@@ -1,50 +1,17 @@
-<html>
-<head>
-    <meta charset="utf-8"/>
-    <script src="wasm_exec.js"></script>
-    <script src="https://unpkg.com/@isomorphic-git/lightning-fs"></script>
-    <script src="https://unpkg.com/isomorphic-git"></script>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite App</title>
+  </head>
+  <body>
+    <div id="app"></div>
     <script type="module">
-        import http from 'https://unpkg.com/isomorphic-git@beta/http/web/index.js'
+      import { FclGateway } from "./build/dist/vite-vanilla-ts-lib-starter.mjs"
 
-        const fs = new LightningFS('fs')
-
-        window.lightningFs = fs;
-        window.pfs = fs.promises;
-
-        const dir = '/flowkit-previewnet-network-missing'
-        await git.clone({
-            fs,
-            http,
-            dir,
-            url: 'https://github.com/bartolomej/flowkit-previewnet-network-missing',
-            corsProxy: 'https://cors.isomorphic-git.org',
-            ref: 'main',
-            singleBranch: true,
-            depth: 10
-        })
-
-        class FileSystem {
-            constructor(fsp) {
-                this.fsp = fsp;
-            }
-
-            async readFile(path) {
-                console.log("readFile", path)
-                const result = await this.fsp.readFile(`${dir}/${path}`, { encoding: "utf8"})
-                console.log("readFile", result)
-                return result;
-            }
-
-            // TODO: Implement other functions
-        }
-
-        window.flowFileSystem = new FileSystem(fs.promises)
-
-        const go = new Go();
-        const wasm = await WebAssembly.instantiateStreaming(fetch("flow.wasm"), go.importObject);
-        await go.run(wasm.instance);
+      new FclGateway("mainnet").getAccount("0xbf1c704edfcf7080").then(console.log)
     </script>
-</head>
-<body></body>
+  </body>
 </html>
