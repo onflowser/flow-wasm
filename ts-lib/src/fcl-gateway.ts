@@ -1,10 +1,11 @@
 import * as fcl from "@onflow/fcl";
 import * as types from "@onflow/typedefs";
 import {FclScopedConfig} from "./fcl-scoped-config";
+import {GoFlowAccount, GoFlowGateway, GoResult} from "@/go-interfaces";
 
 export type NetworkId = "testnet" | "mainnet" | "previewnet"
 
-export class FclGateway {
+export class FclGateway implements GoFlowGateway {
     private readonly scopedConfig: FclScopedConfig<NetworkId>;
 
     constructor(private readonly network: NetworkId) {
@@ -27,12 +28,39 @@ export class FclGateway {
     }
 
 
-    async getAccount(address: string): Promise<types.Account> {
+    async getAccount(address: string): Promise<GoResult<GoFlowAccount>> {
         this.prepare();
-        return fcl.account(address);
+        return resolveToGoResult<types.Account, GoFlowAccount>(() => fcl.account(address), {
+            transform: value => {
+                return {
+                    address: value.address,
+                    balance: value.balance,
+                    code: String(value.code), // TODO: Report an issue for mismatched type?
+                    contracts: JSON.stringify(value.contracts),
+                    keys: JSON.stringify(value.keys)
+                }
+            }
+        });
     }
 
     private prepare() {
         this.scopedConfig.useConfig(this.network);
+    }
+}
+
+async function resolveToGoResult<Value, TValue>(asyncFunction: () => Promise<Value>, options: {
+    transform: (value: Value) => TValue;
+}): Promise<GoResult<TValue>> {
+    try {
+        const result = options.transform(await asyncFunction());
+        return {
+            error: null,
+            value: result
+        }
+    } catch (error) {
+        return {
+            error: String(error),
+            value: null
+        }
     }
 }

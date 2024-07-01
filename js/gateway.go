@@ -2,6 +2,7 @@ package js
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/onflow/cadence"
 	sdk "github.com/onflow/flow-go-sdk"
 	"github.com/onflow/flowkit/v2/gateway"
@@ -18,8 +19,31 @@ func NewGateway(target js.Value) *Gateway {
 }
 
 func (g *Gateway) GetAccount(ctx context.Context, address sdk.Address) (*sdk.Account, error) {
-	//TODO implement me
-	panic("implement me")
+	value, err := parseResult(resolvePromise(g.target.Call("getAccount", address.Hex())))
+
+	if err != nil {
+		return nil, err
+	}
+
+	var contracts map[string]string
+	err = json.Unmarshal([]byte(value.Get("contracts").String()), &contracts)
+
+	if err != nil {
+		panic(err)
+	}
+
+	contractsInBytes := make(map[string][]byte)
+
+	// Iterate over the original map and convert each string to a byte slice
+	for key, value := range contracts {
+		contractsInBytes[key] = []byte(value)
+	}
+
+	return &sdk.Account{
+		Address:   sdk.HexToAddress(value.Get("address").String()),
+		Balance:   uint64(value.Get("balance").Int()),
+		Contracts: contractsInBytes,
+	}, nil
 }
 
 func (g *Gateway) SendSignedTransaction(ctx context.Context, transaction *sdk.Transaction) (*sdk.Transaction, error) {
