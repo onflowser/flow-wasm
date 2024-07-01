@@ -8,10 +8,38 @@
   </head>
   <body>
     <div id="app"></div>
+    <script src="./dist/wasm_exec.js"></script>
+    <script src="https://unpkg.com/@isomorphic-git/lightning-fs"></script>
+    <script src="https://unpkg.com/isomorphic-git"></script>
     <script type="module">
-      import { FclGateway } from "./dist/flow-wasm.mjs"
+      import { FclGateway, FlowWasm, LightningFileSystem } from "./dist/flow-wasm.mjs"
+      import http from 'https://unpkg.com/isomorphic-git@beta/http/web/index.js'
 
-      new FclGateway("mainnet").getAccount("0xbf1c704edfcf7080").then(console.log)
+      const fs = new LightningFS('fs');
+
+      const dir = '/flow-nft-scaffold-3'
+      await git.clone({
+        fs,
+        http,
+        dir,
+        url: 'https://github.com/onflowser/flow-nft-scaffold',
+        corsProxy: 'https://cors.isomorphic-git.org',
+        ref: 'main',
+        singleBranch: true,
+        depth: 10
+      });
+
+      const flowWasm = new FlowWasm({
+        flowWasmUrl: "./dist/flow.wasm",
+        fileSystem: new LightningFileSystem(fs, dir),
+        gateways: {
+          testnet: new FclGateway("testnet"),
+          mainnet: new FclGateway("mainnet"),
+          previewnet: new FclGateway("previewnet"),
+        }
+      });
+
+      await flowWasm.run(new Go());
     </script>
   </body>
 </html>

@@ -2,7 +2,7 @@ import * as fcl from "@onflow/fcl";
 import * as types from "@onflow/typedefs";
 import {FclScopedConfig} from "./fcl-scoped-config";
 
-type NetworkId = "testnet" | "mainnet" | "previewnet"
+export type NetworkId = "testnet" | "mainnet" | "previewnet"
 
 export class FclGateway {
     private readonly scopedConfig: FclScopedConfig<NetworkId>;

@@ -9,7 +9,7 @@ import (
 	"github.com/onflow/flowkit/v2/config"
 	"github.com/onflow/flowkit/v2/deps"
 	jsFlow "github.com/onflowser/flow-cli-wasm/js"
-	"github.com/onflowser/flow-cli-wasm/logger"
+	"github.com/onflowser/flow-cli-wasm/logging"
 	"syscall/js"
 
 	"github.com/onflow/flow-emulator/emulator"
@@ -27,7 +27,7 @@ type FlowWasm struct {
 	config    Config
 	state     *flowkit.State
 	gateway   *gateway.EmulatorGateway
-	logger    *logger.Logger
+	logger    *logging.Logger
 	kit       *flowkit.Flowkit
 	installer *deps.DependencyInstaller
 }
@@ -49,21 +49,21 @@ func main() {
 }
 
 func New(config Config) *FlowWasm {
-	l := logger.NewLogger(logger.Config{
+	logger := logging.NewLogger(logging.Config{
 		Verbose:   config.Verbose,
 		LogFormat: config.LogFormat,
 	})
-	s := memstore.New()
+	store := memstore.New()
 
-	g := gateway.NewEmulatorGatewayWithOpts(
+	emulatorGateway := gateway.NewEmulatorGatewayWithOpts(
 		&gateway.EmulatorKey{
 			PublicKey: emulator.DefaultServiceKey().AccountKey().PublicKey,
 			SigAlgo:   emulator.DefaultServiceKeySigAlgo,
 			HashAlgo:  emulator.DefaultServiceKeyHashAlgo,
 		},
 		gateway.WithEmulatorOptions(
-			emulator.WithLogger(*l.Zerolog()),
-			emulator.WithStore(s),
+			emulator.WithLogger(*logger.Zerolog()),
+			emulator.WithStore(store),
 			emulator.WithTransactionValidationEnabled(false),
 			emulator.WithStorageLimitEnabled(false),
 			emulator.WithTransactionFeesEnabled(false),
@@ -83,12 +83,12 @@ func New(config Config) *FlowWasm {
 		panic(err)
 	}
 
-	kit := flowkit.NewFlowkit(state, *network, g, l)
+	kit := flowkit.NewFlowkit(state, *network, emulatorGateway, logger)
 
 	installer, err := deps.NewDependencyInstaller(
 		state,
 		config.Prompter,
-		deps.WithGateways(jsGateways()),
+		deps.WithGateways(jsGateways(emulatorGateway)),
 	)
 
 	if err != nil {
@@ -97,18 +97,17 @@ func New(config Config) *FlowWasm {
 
 	return &FlowWasm{
 		config:    config,
-		gateway:   g,
-		logger:    l,
+		gateway:   emulatorGateway,
+		logger:    logger,
 		kit:       kit,
 		installer: installer,
 	}
 }
 
-func jsGateways() map[string]gateway.Gateway {
-	emulatorGateway := jsFlow.NewGateway(js.Global().Get("emulator-gateway"))
-	testnetGateway := jsFlow.NewGateway(js.Global().Get("testnet-gateway"))
-	mainnetGateway := jsFlow.NewGateway(js.Global().Get("mainnet-gateway"))
-	previewnetGateway := jsFlow.NewGateway(js.Global().Get("previewnet-gateway"))
+func jsGateways(emulatorGateway gateway.Gateway) map[string]gateway.Gateway {
+	testnetGateway := jsFlow.NewGateway(js.Global().Get("testnetGateway"))
+	mainnetGateway := jsFlow.NewGateway(js.Global().Get("mainnetGateway"))
+	previewnetGateway := jsFlow.NewGateway(js.Global().Get("previewnetGateway"))
 
 	return map[string]gateway.Gateway{
 		config.EmulatorNetwork.Name:   emulatorGateway,
