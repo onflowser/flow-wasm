@@ -89,6 +89,7 @@ func New(config Config) *FlowWasm {
 		state,
 		config.Prompter,
 		deps.WithGateways(jsGateways(emulatorGateway)),
+		deps.WithLogger(logger),
 	)
 
 	if err != nil {
@@ -117,14 +118,13 @@ func jsGateways(emulatorGateway gateway.Gateway) map[string]gateway.Gateway {
 	}
 }
 
-func (w *FlowWasm) Install(this js.Value, args []js.Value) interface{} {
-	err := w.installer.Install()
-
-	if err != nil {
-		panic(err)
+func (w *FlowWasm) Install(this js.Value, args []js.Value) js.Value {
+	executor := func() (js.Value, error) {
+		err := w.installer.Install()
+		return js.Null(), err
 	}
 
-	return map[string]interface{}{}
+	return jsFlow.AsyncWork(executor)
 }
 
 func (w *FlowWasm) GetAccount(this js.Value, args []js.Value) interface{} {

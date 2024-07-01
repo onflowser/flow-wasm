@@ -48,15 +48,15 @@ func (l *Logger) Zerolog() *zerolog.Logger {
 }
 
 func (l *Logger) Debug(s string) {
-	l.Debug(s)
+	l.logger.Debug().Msg(s)
 }
 
 func (l *Logger) Info(s string) {
-	l.Info(s)
+	l.logger.Info().Msg(s)
 }
 
 func (l *Logger) Error(s string) {
-	l.Error(s)
+	l.logger.Error().Msg(s)
 }
 
 func (l *Logger) StartProgress(s string) {

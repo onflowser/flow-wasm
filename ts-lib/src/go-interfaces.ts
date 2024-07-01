@@ -1,11 +1,9 @@
-import * as fclTypes from "@onflow/typedefs";
-
 /**
  * Every function should return an object with both value and error fields,
  * so that errors can be handled appropriately on the go side.
  */
 export interface GoResult<Data> {
-    value: Data;
+    value: Data | null;
     error: string | null;
 }
 
@@ -16,10 +14,11 @@ type FileMode = number;
  * Defines file system interface as implemented in /js/filesystem.go.
  */
 export interface GoFileSystem {
-    readFile(): Promise<GoResult<string>>;
-    writeFile(filename: string, data: string, perm: FileMode): Promise<GoResult<null>>;
-    mkdirAll(path: string, perm: FileMode): Promise<GoResult<null>>
-    stat(path: string): Promise<GoResult<GoFileInfo>>
+    readFile(filename: string): Promise<GoResult<string>>;
+    // TODO: Implement
+    // writeFile(filename: string, data: string, perm: FileMode): Promise<GoResult<null>>;
+    // mkdirAll(path: string, perm: FileMode): Promise<GoResult<null>>
+    // stat(path: string): Promise<GoResult<GoFileInfo>>
 }
 
 /**
@@ -34,10 +33,20 @@ export interface GoFileInfo {
     isDir: boolean;
 }
 
+export type GoFlowAccount = {
+    address: string
+    balance: number
+    code: string
+    // JSON encoded map of contracts
+    contracts: string;
+    // JSON encoded map of keys
+    keys: string;
+}
+
 /**
  * Defines Flow gateway interface as implemented in /js/gateway.go
  */
 export interface GoFlowGateway {
-    getAccount(address: string): Promise<GoResult<fclTypes.Account>>;
+    getAccount(address: string): Promise<GoResult<GoFlowAccount>>;
     // TODO: Define other functions
 }
