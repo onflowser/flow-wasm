@@ -4,12 +4,12 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite App</title>
+    <title>Flow Wasm example</title>
   </head>
   <body>
     <div id="app"></div>
     <script type="module">
-      import { FclGateway } from "./build/dist/vite-vanilla-ts-lib-starter.mjs"
+      import { FclGateway } from "./dist/flow-wasm.mjs"
 
       new FclGateway("mainnet").getAccount("0xbf1c704edfcf7080").then(console.log)
     </script>

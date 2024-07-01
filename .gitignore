@@ -1,4 +1,4 @@
-.idea
+../.idea
 flow.wasm
 wasm_exec.js
 

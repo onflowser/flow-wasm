@@ -1,7 +1,9 @@
 /// <reference types="vitest" />
+// @ts-ignore
 import path from "path";
 import { defineConfig } from "vite";
-import packageJson from "./package.json";
+// @ts-ignore
+import packageJson from "../package.json";
 
 const getPackageName = () => {
   return packageJson.name;
