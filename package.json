@@ -17,7 +17,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "dev": "vite --host",
-    "build": "rimraf dist/**/* && tsc -p ./ts-lib/tsconfig.json && vite build --config ./ts-lib/vite.config.ts && dts-bundle-generator --config ./ts-lib/dts-bundle-generator.config.ts && mv ./ts-lib/dist/index.d.ts ./dist && rmdir ./ts-lib/dist  && copyfiles ./package.json dist",
+    "build": "rimraf dist/**/* && tsc -p ./ts-lib/tsconfig.json && vite build --config ./ts-lib/vite.config.ts && dts-bundle-generator --config ./ts-lib/dts-bundle-generator.config.ts && mv ./ts-lib/dist/index.d.ts ./dist && rmdir ./ts-lib/dist  && copyfiles ./package.json dist && ./build-go.sh",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
     "lint:scripts": "eslint . --ext .ts",
