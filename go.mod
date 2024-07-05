@@ -238,6 +238,6 @@ replace github.com/gofrs/flock => github.com/onflowser/flock v0.0.0-202406240842
 
 replace github.com/gballet/go-libpcsclite => github.com/onflowser/go-libpcsclite v0.0.0-20240624101912-3df75172119f
 
-replace github.com/onflow/flowkit/v2 => github.com/onflowser/flowkit/v2 v2.0.0-20240625131443-0cb26ff12ce9
+replace github.com/onflow/flowkit/v2 => github.com/onflowser/flowkit/v2 v2.0.0-20240629131859-50e389c0b3cc
 
 replace github.com/gosuri/uilive => github.com/onflowser/uilive v0.0.0-20240624125236-14e1343c8a0e

@@ -1,6 +1,7 @@
 ../.idea
 flow.wasm
 wasm_exec.js
+flow-cli
 
 # Logs
 logs

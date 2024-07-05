@@ -12,12 +12,12 @@
     <script src="https://unpkg.com/@isomorphic-git/lightning-fs"></script>
     <script src="https://unpkg.com/isomorphic-git"></script>
     <script type="module">
-      import { FclGateway, FlowWasm, LightningFileSystem } from "./dist/flow-wasm.mjs"
+      import { FclGateway, FlowWasm, LightningFileSystem, DefaultPrompter } from "./dist/flow-wasm.mjs"
       import http from 'https://unpkg.com/isomorphic-git@beta/http/web/index.js'
 
       const fs = new LightningFS('fs');
 
-      const dir = '/flow-nft-scaffold-3';
+      const dir = '/flow-nft-scaffold-4';
 
       try {
         await fs.promises.stat(dir)
@@ -40,6 +40,7 @@
       const flowWasm = new FlowWasm({
         flowWasmUrl: "./dist/flow.wasm",
         fileSystem: new LightningFileSystem(fs, dir),
+        prompter: new DefaultPrompter(),
         gateways: {
           mainnet: new FclGateway("mainnet"),
           previewnet: new FclGateway("previewnet"),

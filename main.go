@@ -36,6 +36,7 @@ func main() {
 	w := New(Config{
 		Verbose:    true,
 		LogFormat:  "text",
+		Prompter:   jsFlow.NewPrompter(js.Global().Get("prompter")),
 		FileSystem: jsFlow.NewFileSystem(js.Global().Get("flowFileSystem")),
 	})
 

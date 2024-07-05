@@ -50,3 +50,19 @@ export interface GoFlowGateway {
     getAccount(address: string): Promise<GoResult<GoFlowAccount>>;
     // TODO: Define other functions
 }
+
+/**
+ * Utilities for getting user input as defined in /js/prompter.go.
+ */
+export interface GoPrompter {
+    shouldUpdateDependency(contractName: string): boolean;
+    // Must return selected account name.
+    addContractToDeployment(networkName: string, accounts: PrompterAccount[], contractName: string): string;
+    addressPromptOrEmpty(label: string): string;
+}
+
+export type PrompterAccount = {
+    Name: string;
+    Address: string;
+    Key: string;
+}

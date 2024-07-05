@@ -1,14 +1,16 @@
 import {NetworkId} from "./fcl-gateway";
-import {GoFileSystem, GoFlowGateway} from "@/go-interfaces";
+import {GoFileSystem, GoFlowGateway, GoPrompter} from "@/go-interfaces";
 import * as fclTypes from "@onflow/typedefs";
 
 export { FclGateway } from "./fcl-gateway"
+export { DefaultPrompter }  from "./default-prompter";
 export { LightningFileSystem } from "./lightning-file-system"
 
 type FlowWasmOptions = {
     gateways: Record<NetworkId, GoFlowGateway>;
     fileSystem: GoFileSystem;
     flowWasmUrl: string;
+    prompter: GoPrompter;
 }
 
 /**
@@ -21,6 +23,7 @@ declare global {
         testnetGateway: GoFlowGateway;
         mainnetGateway: GoFlowGateway;
         previewnetGateway: GoFlowGateway;
+        prompter: GoPrompter;
         // Provided by Go runtime
         Install: () => void;
         GetAccount: (address: string) => fclTypes.Account;
@@ -42,6 +45,7 @@ export class FlowWasm {
         window.testnetGateway = this.options.gateways.testnet;
         window.mainnetGateway = this.options.gateways.mainnet;
         window.previewnetGateway = this.options.gateways.previewnet;
+        window.prompter = this.options.prompter;
 
         const wasm = await WebAssembly.instantiateStreaming(fetch(this.options.flowWasmUrl), goRuntime.importObject);
         await goRuntime.run(wasm.instance);
