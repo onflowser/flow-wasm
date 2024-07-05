@@ -91,6 +91,7 @@ func New(config Config) *FlowWasm {
 		config.Prompter,
 		deps.WithGateways(jsGateways(emulatorGateway)),
 		deps.WithLogger(logger),
+		deps.WithSaveState(),
 	)
 
 	if err != nil {

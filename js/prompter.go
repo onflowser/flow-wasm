@@ -1,6 +1,7 @@
 package js
 
 import (
+	"encoding/json"
 	"github.com/onflow/flowkit/v2/accounts"
 	"github.com/onflow/flowkit/v2/deps"
 	"syscall/js"
@@ -20,7 +21,13 @@ func (p *Prompter) ShouldUpdateDependency(contractName string) bool {
 }
 
 func (p *Prompter) AddContractToDeployment(networkName string, accounts accounts.Accounts, contractName string) *deps.DeploymentData {
-	result := p.target.Call("addContractToDeployment", networkName, accounts, contractName)
+	accountsJson, err := json.Marshal(accounts)
+
+	if err != nil {
+		panic(err)
+	}
+
+	result := p.target.Call("addContractToDeployment", networkName, string(accountsJson), contractName)
 	return &deps.DeploymentData{
 		Network:   networkName,
 		Account:   result.String(),

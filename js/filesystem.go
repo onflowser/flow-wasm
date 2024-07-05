@@ -27,21 +27,35 @@ func (f *FileSystem) ReadFile(source string) ([]byte, error) {
 }
 
 func (f *FileSystem) WriteFile(filename string, data []byte, perm os.FileMode) error {
-	resolvePromise(f.target.Call("writeFile", filename, string(data), perm))
-	// TODO: Handle errors
+	// If we don't explicitly convert os.FileMode to uint32, the call will fail due to serialization errors.
+	_, err := parseResult(resolvePromise(f.target.Call("writeFile", filename, string(data), uint32(perm))))
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (f *FileSystem) MkdirAll(path string, perm os.FileMode) error {
-	resolvePromise(f.target.Call("mkdirAll", path, perm))
-	// TODO: Handle errors
+	// If we don't explicitly convert os.FileMode to uint32, the call will fail due to serialization errors.
+	_, err := parseResult(resolvePromise(f.target.Call("mkdirAll", path, uint32(perm))))
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (f *FileSystem) Stat(path string) (os.FileInfo, error) {
-	result := resolvePromise(f.target.Call("stat", path))
-	// TODO: Handle errors
-	return NewFileInfo(result), nil
+	value, err := parseResult(resolvePromise(f.target.Call("stat", path)))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return NewFileInfo(value), nil
 }
 
 var _ flowkit.ReaderWriter = &FileSystem{}

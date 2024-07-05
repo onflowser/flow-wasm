@@ -14,11 +14,10 @@ type FileMode = number;
  * Defines file system interface as implemented in /js/filesystem.go.
  */
 export interface GoFileSystem {
-    readFile(filename: string): Promise<GoResult<string>>;
-    // TODO: Implement
-    // writeFile(filename: string, data: string, perm: FileMode): Promise<GoResult<null>>;
-    // mkdirAll(path: string, perm: FileMode): Promise<GoResult<null>>
-    // stat(path: string): Promise<GoResult<GoFileInfo>>
+    readFile(path: string): Promise<GoResult<string>>;
+    writeFile(path: string, data: string, perm: FileMode): Promise<GoResult<null>>;
+    mkdirAll(path: string, perm: FileMode): Promise<GoResult<null>>
+    stat(path: string): Promise<GoResult<GoFileInfo>>
 }
 
 /**
@@ -57,12 +56,6 @@ export interface GoFlowGateway {
 export interface GoPrompter {
     shouldUpdateDependency(contractName: string): boolean;
     // Must return selected account name.
-    addContractToDeployment(networkName: string, accounts: PrompterAccount[], contractName: string): string;
+    addContractToDeployment(networkName: string, accountsJson: string, contractName: string): string;
     addressPromptOrEmpty(label: string): string;
-}
-
-export type PrompterAccount = {
-    Name: string;
-    Address: string;
-    Key: string;
 }
