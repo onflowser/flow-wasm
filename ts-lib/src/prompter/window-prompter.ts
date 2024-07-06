@@ -1,6 +1,6 @@
 import {GoPrompter} from "@/go-interfaces";
 
-export class DefaultPrompter implements GoPrompter {
+export class WindowPrompter implements GoPrompter {
     shouldUpdateDependency(contractName: string): boolean {
         const result = window.prompt(`The latest version of ${contractName} is different from the one you have locally. Do you want to update it? (true/false)`, "false");
         return result === "true";

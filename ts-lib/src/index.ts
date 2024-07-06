@@ -1,37 +1,36 @@
-import {NetworkId} from "./fcl-gateway";
+import {NetworkId} from "./gateways/fcl-gateway";
 import {GoFileSystem, GoFlowGateway, GoPrompter} from "@/go-interfaces";
 import * as fclTypes from "@onflow/typedefs";
 
-export { FclGateway } from "./fcl-gateway"
-export { DefaultPrompter }  from "./default-prompter";
-export { LightningFileSystem } from "./lightning-file-system"
+export { FclGateway } from "./gateways/fcl-gateway"
+export { WindowPrompter }  from "./prompter/window-prompter";
+export { LightningFileSystem } from "./filesystem/lightning-file-system"
 
 type FlowWasmOptions = {
     gateways: Record<NetworkId, GoFlowGateway>;
     fileSystem: GoFileSystem;
-    flowWasmUrl: string;
+    flowWasm: WebAssembly.WebAssemblyInstantiatedSource;
     prompter: GoPrompter;
+    global: WasmGlobal;
 }
 
 /**
  * Global properties consumed or provided by go code.
  */
-declare global {
-    interface Window {
-        // Consumed by Go runtime
-        flowFileSystem: GoFileSystem;
-        testnetGateway: GoFlowGateway;
-        mainnetGateway: GoFlowGateway;
-        previewnetGateway: GoFlowGateway;
-        prompter: GoPrompter;
-        // Provided by Go runtime
-        Install: () => void;
-        GetAccount: (address: string) => fclTypes.Account;
-        GetLogs: () => string;
-    }
+export interface WasmGlobal {
+    // Consumed by Go runtime
+    flowFileSystem: GoFileSystem;
+    testnetGateway: GoFlowGateway;
+    mainnetGateway: GoFlowGateway;
+    previewnetGateway: GoFlowGateway;
+    prompter: GoPrompter;
+    // Provided by Go runtime
+    Install: () => void;
+    GetAccount: (address: string) => fclTypes.Account;
+    GetLogs: () => string;
 }
 
-interface GoWasmRuntime {
+export interface GoWasmRuntime {
     run(instance: WebAssembly.Instance): Promise<void>;
     importObject: WebAssembly.Imports;
 }
@@ -40,26 +39,27 @@ export class FlowWasm {
     constructor(private readonly options: FlowWasmOptions) {}
 
     public async run(goRuntime: GoWasmRuntime) {
-        // Configure runtime environment
-        window.flowFileSystem = this.options.fileSystem;
-        window.testnetGateway = this.options.gateways.testnet;
-        window.mainnetGateway = this.options.gateways.mainnet;
-        window.previewnetGateway = this.options.gateways.previewnet;
-        window.prompter = this.options.prompter;
+        const { global } = this.options;
 
-        const wasm = await WebAssembly.instantiateStreaming(fetch(this.options.flowWasmUrl), goRuntime.importObject);
-        await goRuntime.run(wasm.instance);
+        // Configure runtime environment
+        global.flowFileSystem = this.options.fileSystem;
+        global.testnetGateway = this.options.gateways.testnet;
+        global.mainnetGateway = this.options.gateways.mainnet;
+        global.previewnetGateway = this.options.gateways.previewnet;
+        global.prompter = this.options.prompter;
+
+        await goRuntime.run(this.options.flowWasm.instance);
     }
 
     public async install(): Promise<void> {
-        return window.Install();
+        return this.options.global.Install();
     }
 
     public getAccount(address: string): fclTypes.Account {
-        return window.GetAccount(address);
+        return this.options.global.GetAccount(address);
     }
 
     public getLogs(): string[] {
-        return JSON.parse(window.GetLogs());
+        return JSON.parse(this.options.global.GetLogs());
     }
 }

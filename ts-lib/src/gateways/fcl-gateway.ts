@@ -1,6 +1,5 @@
 import * as fcl from "@onflow/fcl";
 import * as types from "@onflow/typedefs";
-import {FclScopedConfig} from "./fcl-scoped-config";
 import {GoFlowAccount, GoFlowGateway, GoResult} from "@/go-interfaces";
 
 export type NetworkId = "testnet" | "mainnet" | "previewnet"
@@ -62,5 +61,32 @@ async function resolveToGoResult<Value, TValue>(asyncFunction: () => Promise<Val
             error: String(error),
             value: null
         }
+    }
+}
+
+type FclConfig = Record<string, unknown>;
+
+ class FclScopedConfig<Identifier extends string> {
+    private readonly configurations: Map<Identifier, FclConfig>;
+
+    constructor() {
+        this.configurations = new Map();
+    }
+
+    setConfig(identifier: Identifier, config: FclConfig) {
+        this.configurations.set(identifier, config);
+    }
+
+    useConfig(identifier: Identifier) {
+        const config = this.configurations.get(identifier);
+        if (!config) {
+            throw new Error(`Configuration '${identifier}' not found.`);
+        }
+        // Apply configuration to fcl locally within the closure
+        const fclConfig = fcl.config();
+        Object.keys(config).forEach(key => {
+            fclConfig.put(key, config[key]);
+        });
+        return fclConfig;
     }
 }

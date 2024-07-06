@@ -2,13 +2,7 @@ import FS from '@isomorphic-git/lightning-fs';
 import {GoFileInfo, GoFileSystem, GoResult} from "@/go-interfaces";
 
 export class LightningFileSystem implements GoFileSystem {
-    private readonly fs: FS;
-    private readonly rootDir: string;
-
-    constructor(fs: FS, rootDir: string) {
-        this.fs = fs;
-        this.rootDir = rootDir;
-    }
+    constructor(private readonly fs: FS, private readonly rootDir: string) {}
 
     async readFile(path: string): Promise<GoResult<string>> {
         try {
