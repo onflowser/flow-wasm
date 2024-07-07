@@ -312,22 +312,22 @@ func serializeBlock(block *sdk.Block) interface{} {
 	serializedCollectionGuarantees := make([]interface{}, 0)
 	for _, value := range block.CollectionGuarantees {
 		serializedCollectionGuarantees = append(serializedCollectionGuarantees, map[string]interface{}{
-			"collectionId": value.CollectionID.String(),
+			"collectionId": value.CollectionID.Hex(),
 		})
 	}
 
 	serializedBlockSeals := make([]interface{}, 0)
 	for _, value := range block.Seals {
 		serializedBlockSeals = append(serializedBlockSeals, map[string]interface{}{
-			"blockId":            value.BlockID.String(),
-			"executionReceiptId": value.ExecutionReceiptID.String(),
+			"blockId":            value.BlockID.Hex(),
+			"executionReceiptId": value.ExecutionReceiptID.Hex(),
 		})
 	}
 
 	// https://developers.flow.com/tools/clients/fcl-js/api#blockobject
 	return map[string]interface{}{
-		"id":                   block.ID.String(),
-		"parentId":             block.ParentID.String(),
+		"id":                   block.ID.Hex(),
+		"parentId":             block.ParentID.Hex(),
 		"height":               block.Height,
 		"timestamp":            block.Timestamp.String(),
 		"collectionGuarantees": serializedCollectionGuarantees,
@@ -352,7 +352,7 @@ func (g *InternalGateway) getCollection(this js.Value, args []js.Value) interfac
 }
 
 func serializeCollection(collection *sdk.Collection) interface{} {
-	serializedTransactionIds := make([]string, 0)
+	serializedTransactionIds := make([]interface{}, 0)
 	for _, value := range collection.TransactionIDs {
 		serializedTransactionIds = append(serializedTransactionIds, value.Hex())
 	}

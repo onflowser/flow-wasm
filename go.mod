@@ -5,9 +5,9 @@ go 1.22
 toolchain go1.22.3
 
 require (
-	github.com/onflow/cadence v1.0.0-preview.34
+	github.com/onflow/cadence v1.0.0-preview.35
 	github.com/onflow/flow-emulator v1.0.0-preview.32
-	github.com/onflow/flow-go-sdk v1.0.0-preview.36
+	github.com/onflow/flow-go-sdk v1.0.0-preview.37
 	github.com/onflow/flowkit/v2 v2.0.0-stable-cadence-alpha.24.0.20240618003932-da49a83e32a8
 	github.com/rs/zerolog v1.33.0
 )
@@ -136,12 +136,12 @@ require (
 	github.com/onflow/flow-core-contracts/lib/go/templates v1.3.0 // indirect
 	github.com/onflow/flow-ft/lib/go/contracts v1.0.0 // indirect
 	github.com/onflow/flow-ft/lib/go/templates v1.0.0 // indirect
-	github.com/onflow/flow-go v0.35.14-crescendo-preview.27 // indirect
+	github.com/onflow/flow-go v0.35.14-crescendo-preview.27.0.20240626210601-604590f19db9 // indirect
 	github.com/onflow/flow-nft/lib/go/contracts v1.2.1 // indirect
 	github.com/onflow/flow-nft/lib/go/templates v1.2.0 // indirect
 	github.com/onflow/flow/protobuf/go/flow v0.4.4 // indirect
 	github.com/onflow/go-ethereum v1.13.4 // indirect
-	github.com/onflow/sdks v0.5.1-0.20230912225508-b35402f12bba // indirect
+	github.com/onflow/sdks v0.6.0-preview.1 // indirect
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
@@ -241,3 +241,6 @@ replace github.com/gballet/go-libpcsclite => github.com/onflowser/go-libpcsclite
 replace github.com/onflow/flowkit/v2 => github.com/onflowser/flowkit/v2 v2.0.0-20240629131859-50e389c0b3cc
 
 replace github.com/gosuri/uilive => github.com/onflowser/uilive v0.0.0-20240624125236-14e1343c8a0e
+
+// TODO: Update once this issue is resolved: https://github.com/onflow/flow-emulator/issues/703
+replace github.com/onflow/flow-emulator => ../flow-emulator
