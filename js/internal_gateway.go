@@ -23,6 +23,9 @@ func NewInternalGateway(emulator *gateway.EmulatorGateway) *InternalGateway {
 	}
 
 	target.Set("getAccount", js.FuncOf(gtw.getAccount))
+	target.Set("getLatestBlock", js.FuncOf(gtw.getLatestBlock))
+	target.Set("getBlockById", js.FuncOf(gtw.getBlockByID))
+	target.Set("getBlockByHeight", js.FuncOf(gtw.getBlockByHeight))
 
 	return gtw
 }
@@ -76,6 +79,7 @@ func (g *InternalGateway) getAccount(this js.Value, args []js.Value) interface{}
 		})
 	}
 
+	// https://developers.flow.com/tools/clients/fcl-js/api#accountobject
 	return map[string]interface{}{
 		"address":   account.Address.String(),
 		"balance":   account.Balance,
@@ -125,19 +129,64 @@ func (g *InternalGateway) executeScriptAtID(ctx context.Context, bytes []byte, v
 	panic("implement me")
 }
 
-func (g *InternalGateway) getLatestBlock(ctx context.Context) (*sdk.Block, error) {
-	//TODO implement me
-	panic("implement me")
+func (g *InternalGateway) getLatestBlock(this js.Value, args []js.Value) interface{} {
+	block, err := g.emulator.GetLatestBlock(context.Background())
+
+	if err != nil {
+		panic(err)
+	}
+
+	return serializeBlock(block)
 }
 
-func (g *InternalGateway) getBlockByHeight(ctx context.Context, u uint64) (*sdk.Block, error) {
-	//TODO implement me
-	panic("implement me")
+func (g *InternalGateway) getBlockByHeight(this js.Value, args []js.Value) interface{} {
+	block, err := g.emulator.GetBlockByHeight(context.Background(), uint64(args[0].Int()))
+
+	if err != nil {
+		panic(err)
+	}
+
+	return serializeBlock(block)
 }
 
-func (g *InternalGateway) getBlockByID(ctx context.Context, identifier sdk.Identifier) (*sdk.Block, error) {
-	//TODO implement me
-	panic("implement me")
+func (g *InternalGateway) getBlockByID(this js.Value, args []js.Value) interface{} {
+	block, err := g.emulator.GetBlockByID(context.Background(), sdk.HexToID(args[0].String()))
+
+	if err != nil {
+		panic(err)
+	}
+
+	return serializeBlock(block)
+}
+
+func serializeBlock(block *sdk.Block) interface{} {
+	serializedCollectionGuarantees := make([]interface{}, 0)
+
+	for _, value := range block.CollectionGuarantees {
+		serializedCollectionGuarantees = append(serializedCollectionGuarantees, map[string]interface{}{
+			"collectionId": value.CollectionID.String(),
+		})
+	}
+
+	serializedBlockSeals := make([]interface{}, 0)
+
+	for _, value := range block.Seals {
+		serializedBlockSeals = append(serializedBlockSeals, map[string]interface{}{
+			"blockId":            value.BlockID.String(),
+			"executionReceiptId": value.ExecutionReceiptID.String(),
+		})
+	}
+
+	// https://developers.flow.com/tools/clients/fcl-js/api#blockobject
+	return map[string]interface{}{
+		"id":                   block.ID.String(),
+		"parentId":             block.ParentID.String(),
+		"height":               block.Height,
+		"timestamp":            block.Timestamp.String(),
+		"collectionGuarantees": serializedCollectionGuarantees,
+		"blockSeals":           serializedBlockSeals,
+		"signatures":           []interface{}{}, // Not implemented
+	}
 }
 
 func (g *InternalGateway) getEvents(ctx context.Context, s string, u uint64, u2 uint64) ([]sdk.BlockEvents, error) {
