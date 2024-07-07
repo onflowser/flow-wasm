@@ -1,9 +1,17 @@
 import {beforeAll, describe, expect, it} from "vitest";
 import * as fcl from "@onflow/fcl";
 import "../../../dist/wasm_exec.js";
-import {Account, Block, InteractionAccount, Transaction} from "@onflow/typedefs";
+import {
+    Account,
+    Block,
+    CollectionGuarantee,
+    InteractionAccount,
+    Transaction,
+    TransactionStatus
+} from "@onflow/typedefs";
 import {HashAlgorithm, SignatureAlgorithm} from "@onflow/typedefs/src";
 import {runTestingFlowWasm} from "../test-utils";
+import {Collection} from "../../../dist";
 
 async function prepareTests() {
     const flowWasm = await runTestingFlowWasm();
@@ -102,31 +110,62 @@ describe("FCL transport - blocks", async () => {
     });
 })
 
+// language=Cadence
+const helloWorldCadenceTx = `
+    transaction {
+        execute {
+            log("Hello World")
+        }
+    }
+`
+
 describe("FCL transport - collections", async () => {
     beforeAll(prepareTests)
 
-    it('should return collection by ID', () => {
+    it('should return collection by ID', async () => {
+        const transactionId = await fcl.mutate({
+            cadence: helloWorldCadenceTx,
+            limit: 10
+        });
 
+        const status = await fcl.tx(transactionId).snapshot();
+
+        const block = await fcl.send([fcl.getBlock(), fcl.atBlockId(status.blockId)]).then(fcl.decode);
+
+        expect(block.collectionGuarantees).toHaveLength(1);
+
+        const collectionId = block.collectionGuarantees[0].collectionId;
+
+        const actual = await fcl.send([fcl.getCollection(collectionId)]).then(fcl.decode);
+
+        const expected: Collection = {
+            id: collectionId,
+            transactionIds: [transactionId]
+        }
+
+        expect(actual).toMatchObject(expected)
     });
 })
 
 describe("FCL transport - transactions", async () => {
     beforeAll(prepareTests);
 
-    // language=Cadence
-    const helloWorldCadenceTx = `
-        transaction {
-            execute {
-                log("Hello World")
-            }
-        }
-    `
-
-    it('should send a transaction', async () => {
+    it('should send a transaction and return status', async () => {
         const transactionId = await fcl.mutate({
             cadence: helloWorldCadenceTx,
             limit: 10
         });
+
+        const status = await fcl.send([fcl.getTransactionStatus(transactionId)]).then(fcl.decode);
+
+        expect(status).toMatchObject({
+            blockId: expect.any(String),
+            statusCode: 0,
+            status: 4,
+            statusString: "SEALED",
+            events: [],
+            errorMessage: "",
+        })
 
         expect(transactionId).toBeTypeOf("string");
     });

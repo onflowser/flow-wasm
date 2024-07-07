@@ -1,4 +1,4 @@
-import {Account, InteractionTag, Transaction} from "@onflow/typedefs";
+import {Account, InteractionTag, Transaction, TransactionStatus} from "@onflow/typedefs";
 import * as fcl from "@onflow/fcl";
 import * as rlp from "@onflow/rlp";
 import {Interaction} from "@onflow/typedefs/types/interaction";
@@ -29,6 +29,8 @@ export interface InternalGateway {
     getBlockByHeight: (height: number) => JsResponse<Account>;
     getTransaction: (id: string) => JsResponse<Transaction>;
     getTransactionsByBlockId: (blockId: string) => JsResponse<Transaction[]>;
+    getTransactionResultsByBlockId: (blockId: string) => JsResponse<TransactionStatus[]>;
+    getTransactionResult: (transactionId: string) => JsResponse<TransactionStatus>;
     getCollection: (id: string) => JsResponse<Collection[]>;
     // JSON encoded object matching SendSignedTransactionRequest Go struct
     sendSignedTransaction: (request: string) => JsResponse<string>;
@@ -88,6 +90,15 @@ export function buildWasmTransport(internalGateway: InternalGateway) {
                         ...context.response(),
                         tag: ix.tag,
                         transaction: internalGateway.getTransaction(ix.transaction.id)
+                    };
+                }
+                throw new Error("Unreachable")
+            case InteractionTag.GET_TRANSACTION_STATUS:
+                if (ix.transaction.id) {
+                    return {
+                        ...context.response(),
+                        tag: ix.tag,
+                        transactionStatus: internalGateway.getTransactionResult(ix.transaction.id)
                     };
                 }
                 throw new Error("Unreachable")

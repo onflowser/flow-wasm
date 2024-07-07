@@ -48,6 +48,8 @@ func NewInternalGateway(emulator *gateway.EmulatorGateway) *InternalGateway {
 	target.Set("getCollection", js.FuncOf(gtw.getCollection))
 	target.Set("sendSignedTransaction", js.FuncOf(gtw.sendSignedTransaction))
 	target.Set("getNetworkParameters", js.FuncOf(gtw.getNetworkParameters))
+	target.Set("getTransactionResultsByBlockId", js.FuncOf(gtw.getTransactionResultsByBlockID))
+	target.Set("getTransactionResult", js.FuncOf(gtw.getTransactionResult))
 
 	return gtw
 }
@@ -199,14 +201,66 @@ func serializeSignature(sig sdk.TransactionSignature) interface{} {
 	}
 }
 
-func (g *InternalGateway) getTransactionResultsByBlockID(ctx context.Context, blockID sdk.Identifier) ([]*sdk.TransactionResult, error) {
-	//TODO implement me
-	panic("implement me")
+func (g *InternalGateway) getTransactionResultsByBlockID(this js.Value, args []js.Value) interface{} {
+	results, err := g.emulator.GetTransactionResultsByBlockID(context.Background(), sdk.HexToID(args[0].String()))
+
+	if err != nil {
+		panic(err)
+	}
+
+	serializedResults := make([]interface{}, 0)
+	for _, result := range results {
+		serializedResults = append(serializedResults, serializeTransactionResult(result))
+	}
+
+	return serializedResults
 }
 
-func (g *InternalGateway) getTransactionResult(ctx context.Context, identifier sdk.Identifier, b bool) (*sdk.TransactionResult, error) {
-	//TODO implement me
-	panic("implement me")
+func (g *InternalGateway) getTransactionResult(this js.Value, args []js.Value) interface{} {
+	result, err := g.emulator.GetTransactionResult(context.Background(), sdk.HexToID(args[0].String()), false)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return serializeTransactionResult(result)
+}
+
+func serializeTransactionResult(result *sdk.TransactionResult) interface{} {
+	serializedEvents := make([]interface{}, 0)
+	for _, event := range result.Events {
+		// https://developers.flow.com/tools/clients/fcl-js/api#event-object
+		serializedEvents = append(serializedEvents, map[string]interface{}{
+			"type":             event.Type,
+			"data":             event.Value.String(),
+			"blockId":          result.BlockID.Hex(),
+			"blockHeight":      result.BlockHeight,
+			"blockTimestamp":   "", // TODO: Implement
+			"transactionId":    event.TransactionID.Hex(),
+			"transactionIndex": event.TransactionIndex,
+			"eventIndex":       event.EventIndex,
+		})
+	}
+
+	statusCode := 0
+	if result.Error != nil {
+		statusCode = 1
+	}
+
+	errorMessage := ""
+	if result.Error != nil {
+		errorMessage = result.Error.Error()
+	}
+
+	// https://developers.flow.com/tools/clients/fcl-js/api#transactionstatusobject
+	return map[string]interface{}{
+		"blockId":      result.BlockID.Hex(),
+		"events":       serializedEvents,
+		"status":       int(result.Status),
+		"statusString": result.Status.String(),
+		"errorMessage": errorMessage,
+		"statusCode":   statusCode,
+	}
 }
 
 func (g *InternalGateway) executeScript(ctx context.Context, bytes []byte, values []cadence.Value) (cadence.Value, error) {
@@ -256,7 +310,6 @@ func (g *InternalGateway) getBlockByID(this js.Value, args []js.Value) interface
 
 func serializeBlock(block *sdk.Block) interface{} {
 	serializedCollectionGuarantees := make([]interface{}, 0)
-
 	for _, value := range block.CollectionGuarantees {
 		serializedCollectionGuarantees = append(serializedCollectionGuarantees, map[string]interface{}{
 			"collectionId": value.CollectionID.String(),
@@ -264,7 +317,6 @@ func serializeBlock(block *sdk.Block) interface{} {
 	}
 
 	serializedBlockSeals := make([]interface{}, 0)
-
 	for _, value := range block.Seals {
 		serializedBlockSeals = append(serializedBlockSeals, map[string]interface{}{
 			"blockId":            value.BlockID.String(),
@@ -280,7 +332,7 @@ func serializeBlock(block *sdk.Block) interface{} {
 		"timestamp":            block.Timestamp.String(),
 		"collectionGuarantees": serializedCollectionGuarantees,
 		"blockSeals":           serializedBlockSeals,
-		"signatures":           []interface{}{}, // Not implemented
+		"signatures":           []interface{}{}, // TODO: Implement
 	}
 }
 
