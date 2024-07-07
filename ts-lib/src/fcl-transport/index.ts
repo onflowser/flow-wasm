@@ -1,7 +1,17 @@
-import {InteractionTag, Account} from "@onflow/typedefs";
+import {Account, InteractionTag, Transaction} from "@onflow/typedefs";
 import * as fcl from "@onflow/fcl";
 import * as rlp from "@onflow/rlp";
 import {Interaction} from "@onflow/typedefs/types/interaction";
+
+// https://developers.flow.com/tools/clients/fcl-js/api#collectionobject
+type Collection = {
+    id: string;
+    transactionIds: string[];
+}
+
+type NetworkParameters = {
+    chainId: string;
+}
 
 type FclContext = {
     config: typeof fcl.config;
@@ -17,19 +27,25 @@ export interface InternalGateway {
     getBlockById: (id: string) => JsResponse<Account>;
     getLatestBlock: () => JsResponse<Account>;
     getBlockByHeight: (height: number) => JsResponse<Account>;
+    getTransaction: (id: string) => JsResponse<Transaction>;
+    getTransactionsByBlockId: (blockId: string) => JsResponse<Transaction[]>;
+    getCollection: (id: string) => JsResponse<Collection[]>;
+    // JSON encoded object matching SendSignedTransactionRequest Go struct
+    sendSignedTransaction: (request: string) => JsResponse<string>;
+    // https://github.com/onflow/fcl-js/pull/1420
+    getNetworkParameters: () => JsResponse<NetworkParameters>;
 }
 
-type JsResponse<Value> = {
-    error: string;
-    value: Value;
-}
+// TODO: Expand to handle error cases
+type JsResponse<Value> = Value;
 
 export function buildWasmTransport(internalGateway: InternalGateway) {
-    return function transportWasm(
-        ix: Interaction,
+    return async function transportWasm(
+        ix: Interaction | Promise<Interaction>,
         context: FclContext,
         _options: FclOptions
     ) {
+        ix = await ix;
         switch (ix.tag) {
             case InteractionTag.GET_ACCOUNT:
                 return {
@@ -59,9 +75,51 @@ export function buildWasmTransport(internalGateway: InternalGateway) {
                         block: internalGateway.getBlockByHeight(Number(ix.block.height))
                     };
                 }
+                // No parameters are provided when fetching the reference block for a transaction.
+                // See: https://github.com/onflow/fcl-js/blob/9c7873140015c9d1e28712aed93c56654f656639/packages/sdk/src/resolve/resolve.js#L83-L89
+                return {
+                    ...context.response(),
+                    tag: ix.tag,
+                    block: internalGateway.getLatestBlock()
+                };
+            case InteractionTag.GET_TRANSACTION:
+                if (ix.transaction.id) {
+                    return {
+                        ...context.response(),
+                        tag: ix.tag,
+                        transaction: internalGateway.getTransaction(ix.transaction.id)
+                    };
+                }
                 throw new Error("Unreachable")
+            case InteractionTag.GET_COLLECTION:
+                if (ix.collection.id) {
+                    return {
+                        ...context.response(),
+                        tag: ix.tag,
+                        collection: internalGateway.getCollection(ix.collection.id)
+                    }
+                }
+                throw new Error("Unreachable")
+            case InteractionTag.TRANSACTION:
+                return {
+                    ...context.response(),
+                    tag: ix.tag,
+                    transaction: internalGateway.sendSignedTransaction(JSON.stringify({
+                        gasLimit: Number(ix.message.computeLimit ?? 10),
+                        payer: ix.message.payer ?? "",
+                        referenceBlockId: ix.message.refBlock ?? "",
+                        script: ix.message.cadence ?? "",
+                        arguments: ix.message.arguments,
+                    }))
+                }
+            case InteractionTag.GET_NETWORK_PARAMETERS:
+                return {
+                    ...context.response(),
+                    tag: ix.tag,
+                    networkParameters: internalGateway.getNetworkParameters()
+                }
             default:
-                throw new Error(`Unimplemented interaction: ${ix.tag}`)
+                throw new Error(`Unimplemented interaction: ${JSON.stringify(ix)}`)
         }
     }
 }

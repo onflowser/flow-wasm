@@ -1,19 +1,25 @@
 import {beforeAll, describe, expect, it} from "vitest";
 import * as fcl from "@onflow/fcl";
 import "../../../dist/wasm_exec.js";
-import {Account, Block} from "@onflow/typedefs";
+import {Account, Block, InteractionAccount} from "@onflow/typedefs";
 import {HashAlgorithm, SignatureAlgorithm} from "@onflow/typedefs/src";
 import {runTestingFlowWasm} from "../test-utils";
 
-async function onBeforeAll() {
+async function prepareTests() {
     const flowWasm = await runTestingFlowWasm();
 
-    fcl.config({"sdk.transport": flowWasm.getFclTransport()});
+    fcl.config({
+        "sdk.transport": flowWasm.fclTransport(),
+        // This is here because FCL expects it, but it's not actually being used
+        'flow.network': 'testnet',
+        'accessNode.api': 'https://rest-testnet.onflow.org',
+        'discovery.wallet': 'https://fcl-discovery.onflow.org/testnet/authn'
+    });
 }
 
 
 describe("FCL transport - accounts", () => {
-    beforeAll(onBeforeAll);
+    beforeAll(prepareTests);
 
     it("should get account by address", async () => {
         const actual = await fcl.send([fcl.getAccount("0xf8d6e0586b0a20c7")]).then(fcl.decode);
@@ -44,7 +50,7 @@ describe("FCL transport - accounts", () => {
 });
 
 describe("FCL transport - blocks", async () => {
-    beforeAll(onBeforeAll);
+    beforeAll(prepareTests);
 
     it('should get latest sealed block', async () => {
         const actual = await fcl.send([fcl.getBlock(true)]).then(fcl.decode);
@@ -92,5 +98,54 @@ describe("FCL transport - blocks", async () => {
         }
 
         expect(actual).toMatchObject(expected);
+    });
+})
+
+describe("FCL transport - collections", async () => {
+    beforeAll(prepareTests)
+
+    it('should return collection by ID', () => {
+
+    });
+})
+
+describe("FCL transport - transactions", async () => {
+    beforeAll(prepareTests)
+
+    function authorizationFunction(authAccount: InteractionAccount): InteractionAccount {
+        return {
+            ...authAccount,
+            addr: "f8d6e0586b0a20c7",
+            keyId: 0,
+            signingFunction: () => ({
+                addr: "0xf8d6e0586b0a20c7",
+                keyId: 0,
+                signature: ""
+            })
+        }
+    }
+
+    it('should send a transaction', async () => {
+        const transactionId = await fcl.mutate({
+            // language=Cadence
+            cadence: `
+                transaction {
+                    execute {
+                        log("Hello World")
+                    }
+                }
+            `,
+            limit: 10,
+            payer: authorizationFunction,
+            authz: authorizationFunction,
+            proposer: authorizationFunction,
+            authorizations: []
+        });
+
+        expect(transactionId).toBeInstanceOf(String);
+    });
+
+    it('should get transaction by ID', () => {
+
     });
 })

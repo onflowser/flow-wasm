@@ -57,7 +57,7 @@ export class FlowWasm {
         });
     }
 
-    public getFclTransport() {
+    public fclTransport() {
         return buildWasmTransport(this.options.global.gateway);
     }
 
