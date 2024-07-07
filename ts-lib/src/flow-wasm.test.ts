@@ -70,7 +70,7 @@ describe("Flow WASM", () => {
 
         fcl.config({"sdk.transport": flowWasm.getFclTransport()});
 
-        const response = await fcl.send([fcl.getAccount("0xf8d6e0586b0a20c7")]);
+        const response = await fcl.send([fcl.getAccount("0xf8d6e0586b0a20c7")]).then(fcl.decode);
 
         const expectedAccount: Account = {
             address: "f8d6e0586b0a20c7",
