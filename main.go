@@ -1,10 +1,8 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"github.com/onflow/flow-emulator/storage/memstore"
-	sdk "github.com/onflow/flow-go-sdk"
 	"github.com/onflow/flowkit/v2"
 	"github.com/onflow/flowkit/v2/config"
 	"github.com/onflow/flowkit/v2/deps"
@@ -40,10 +38,14 @@ func main() {
 		FileSystem: jsFlow.NewFileSystem(js.Global().Get("flowFileSystem")),
 	})
 
-	// Mount the function on the JavaScript global object.
-	js.Global().Set("GetAccount", js.FuncOf(w.GetAccount))
-	js.Global().Set("GetLogs", js.FuncOf(w.GetLogs))
-	js.Global().Set("Install", js.FuncOf(w.Install))
+	// Register APIs
+	internalGateway := jsFlow.NewInternalGateway(w.gateway)
+	js.Global().Set("gateway", internalGateway.JsValue())
+	js.Global().Set("getLogs", js.FuncOf(w.getLogs))
+	js.Global().Set("install", js.FuncOf(w.install))
+
+	// Indicate the emulator started and APIs were initialized
+	js.Global().Call("onStarted")
 
 	// Prevent the function from returning, which is required in a wasm module
 	select {}
@@ -108,9 +110,9 @@ func New(config Config) *FlowWasm {
 }
 
 func jsGateways(emulatorGateway gateway.Gateway) map[string]gateway.Gateway {
-	testnetGateway := jsFlow.NewGateway(js.Global().Get("testnetGateway"))
-	mainnetGateway := jsFlow.NewGateway(js.Global().Get("mainnetGateway"))
-	previewnetGateway := jsFlow.NewGateway(js.Global().Get("previewnetGateway"))
+	testnetGateway := jsFlow.NewExternalGateway(js.Global().Get("testnetGateway"))
+	mainnetGateway := jsFlow.NewExternalGateway(js.Global().Get("mainnetGateway"))
+	previewnetGateway := jsFlow.NewExternalGateway(js.Global().Get("previewnetGateway"))
 
 	return map[string]gateway.Gateway{
 		config.EmulatorNetwork.Name:   emulatorGateway,
@@ -120,7 +122,7 @@ func jsGateways(emulatorGateway gateway.Gateway) map[string]gateway.Gateway {
 	}
 }
 
-func (w *FlowWasm) Install(this js.Value, args []js.Value) any {
+func (w *FlowWasm) install(this js.Value, args []js.Value) any {
 	executor := func() (js.Value, error) {
 		err := w.installer.Install()
 		return js.Null(), err
@@ -129,21 +131,7 @@ func (w *FlowWasm) Install(this js.Value, args []js.Value) any {
 	return jsFlow.AsyncWork(executor)
 }
 
-func (w *FlowWasm) GetAccount(this js.Value, args []js.Value) interface{} {
-	account, err := w.gateway.GetAccount(context.Background(), sdk.HexToAddress(args[0].String()))
-
-	if err != nil {
-		panic(err)
-	}
-
-	return map[string]interface{}{
-		"address": account.Address.String(),
-		"balance": account.Balance,
-		// "contracts": account.Contracts,
-	}
-}
-
-func (w *FlowWasm) GetLogs(this js.Value, args []js.Value) interface{} {
+func (w *FlowWasm) getLogs(this js.Value, args []js.Value) interface{} {
 	res, err := json.Marshal(w.logger.LogsHistory())
 
 	if err != nil {

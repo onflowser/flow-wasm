@@ -1,6 +1,6 @@
 import {NetworkId} from "./gateways/fcl-gateway";
 import {GoFileSystem, GoFlowGateway, GoPrompter} from "@/go-interfaces";
-import * as fclTypes from "@onflow/typedefs";
+import {buildWasmTransport, InternalGateway} from "@/fcl-transport";
 
 export { FclGateway } from "./gateways/fcl-gateway"
 export { WindowPrompter }  from "./prompter/window-prompter";
@@ -24,10 +24,12 @@ export interface WasmGlobal {
     mainnetGateway: GoFlowGateway;
     previewnetGateway: GoFlowGateway;
     prompter: GoPrompter;
+    // Called when the emulator starts and initializes APIs
+    onStarted: () => void;
     // Provided by Go runtime
-    Install: () => void;
-    GetAccount: (address: string) => fclTypes.Account;
-    GetLogs: () => string;
+    gateway: InternalGateway;
+    install: () => void;
+    getLogs: () => string;
 }
 
 export interface GoWasmRuntime {
@@ -36,30 +38,34 @@ export interface GoWasmRuntime {
 }
 
 export class FlowWasm {
+
     constructor(private readonly options: FlowWasmOptions) {}
 
     public async run(goRuntime: GoWasmRuntime) {
-        const { global } = this.options;
+        return new Promise<void>((resolve) => {
+            const { global } = this.options;
 
-        // Configure runtime environment
-        global.flowFileSystem = this.options.fileSystem;
-        global.testnetGateway = this.options.gateways.testnet;
-        global.mainnetGateway = this.options.gateways.mainnet;
-        global.previewnetGateway = this.options.gateways.previewnet;
-        global.prompter = this.options.prompter;
+            // Configure runtime environment
+            global.flowFileSystem = this.options.fileSystem;
+            global.testnetGateway = this.options.gateways.testnet;
+            global.mainnetGateway = this.options.gateways.mainnet;
+            global.previewnetGateway = this.options.gateways.previewnet;
+            global.prompter = this.options.prompter;
+            global.onStarted = resolve;
 
-        await goRuntime.run(this.options.flowWasm.instance);
+            goRuntime.run(this.options.flowWasm.instance);
+        });
+    }
+
+    public getFclTransport() {
+        return buildWasmTransport(this.options.global.gateway);
     }
 
     public async install(): Promise<void> {
-        return this.options.global.Install();
-    }
-
-    public getAccount(address: string): fclTypes.Account {
-        return this.options.global.GetAccount(address);
+        return this.options.global.install();
     }
 
     public getLogs(): string[] {
-        return JSON.parse(this.options.global.GetLogs());
+        return JSON.parse(this.options.global.getLogs());
     }
 }

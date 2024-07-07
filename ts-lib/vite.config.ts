@@ -45,7 +45,9 @@ module.exports = defineConfig({
       },
     },
   },
-  test: {},
+  test: {
+    setupFiles: ['./setupTests.js'],
+  },
   resolve: {
     alias: [
       { find: "@", replacement: path.resolve(__dirname, "src") },
