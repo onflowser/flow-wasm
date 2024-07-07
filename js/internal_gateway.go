@@ -156,36 +156,46 @@ func (g *InternalGateway) getTransactionsByBlockID(this js.Value, args []js.Valu
 func serializeTransaction(tx *sdk.Transaction) map[string]interface{} {
 	// https://developers.flow.com/tools/clients/fcl-js/api#proposalkeyobject
 	serializedProposalKey := map[string]interface{}{
-		"address":        tx.ProposalKey.Address,
-		"keyIndex":       tx.ProposalKey.KeyIndex,
+		"address":        tx.ProposalKey.Address.Hex(),
+		"keyId":          tx.ProposalKey.KeyIndex,
 		"sequenceNumber": tx.ProposalKey.SequenceNumber,
 	}
 
-	serializedAuthorizers := make([]string, 0)
+	serializedAuthorizers := make([]interface{}, 0)
 	for _, value := range tx.Authorizers {
 		serializedAuthorizers = append(serializedAuthorizers, value.Hex())
 	}
 
 	serializedEnvelopeSignatures := make([]interface{}, 0)
 	for _, value := range tx.EnvelopeSignatures {
-		// https://developers.flow.com/tools/clients/fcl-js/api#signableobject
-		serializedEnvelopeSignatures = append(serializedEnvelopeSignatures, map[string]interface{}{
-			"addr":      value.Address.Hex(),
-			"keyId":     value.KeyIndex,
-			"signature": string(value.Signature),
-		})
+		serializedEnvelopeSignatures = append(serializedEnvelopeSignatures, serializeSignature(value))
+	}
+
+	serializedPayloadSignatures := make([]interface{}, 0)
+	for _, value := range tx.PayloadSignatures {
+		serializedPayloadSignatures = append(serializedPayloadSignatures, serializeSignature(value))
 	}
 
 	// https://developers.flow.com/tools/clients/fcl-js/api#transactionobject
 	return map[string]interface{}{
-		"id":                 tx.ID().Hex(),
 		"authorizers":        serializedAuthorizers,
 		"envelopeSignatures": serializedEnvelopeSignatures,
+		"payloadSignatures":  serializedPayloadSignatures,
 		"gasLimit":           tx.GasLimit,
 		"payer":              tx.Payer.Hex(),
 		"proposalKey":        serializedProposalKey,
 		"referenceBlockId":   tx.ReferenceBlockID.Hex(),
 		"script":             string(tx.Script),
+		"args":               []interface{}{}, // TODO: Implement
+	}
+}
+
+func serializeSignature(sig sdk.TransactionSignature) interface{} {
+	// https://developers.flow.com/tools/clients/fcl-js/api#signableobject
+	return map[string]interface{}{
+		"addr":      sig.Address.Hex(),
+		"keyId":     sig.KeyIndex,
+		"signature": string(sig.Signature),
 	}
 }
 

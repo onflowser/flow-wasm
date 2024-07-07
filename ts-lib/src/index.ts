@@ -1,6 +1,7 @@
 import {NetworkId} from "./gateways/fcl-gateway";
 import {GoFileSystem, GoFlowGateway, GoPrompter} from "@/go-interfaces";
 import {buildWasmTransport, InternalGateway} from "@/fcl-transport";
+import {InteractionAccount} from "@onflow/typedefs";
 
 export { FclGateway } from "./gateways/fcl-gateway"
 export { WindowPrompter }  from "./prompter/window-prompter";
@@ -67,5 +68,22 @@ export class FlowWasm {
 
     public getLogs(): string[] {
         return JSON.parse(this.options.global.getLogs());
+    }
+
+    // Authorization function for signing with service account
+    // https://developers.flow.com/tools/clients/fcl-js/api#authz
+    public serviceAccountAuthz() {
+        return function (authAccount: InteractionAccount): InteractionAccount {
+            return {
+                ...authAccount,
+                addr: "f8d6e0586b0a20c7",
+                keyId: 0,
+                signingFunction: () => ({
+                    addr: "0xf8d6e0586b0a20c7",
+                    keyId: 0,
+                    signature: ""
+                })
+            }
+        }
     }
 }

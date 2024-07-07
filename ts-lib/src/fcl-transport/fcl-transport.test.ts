@@ -1,7 +1,7 @@
 import {beforeAll, describe, expect, it} from "vitest";
 import * as fcl from "@onflow/fcl";
 import "../../../dist/wasm_exec.js";
-import {Account, Block, InteractionAccount} from "@onflow/typedefs";
+import {Account, Block, InteractionAccount, Transaction} from "@onflow/typedefs";
 import {HashAlgorithm, SignatureAlgorithm} from "@onflow/typedefs/src";
 import {runTestingFlowWasm} from "../test-utils";
 
@@ -10,6 +10,7 @@ async function prepareTests() {
 
     fcl.config({
         "sdk.transport": flowWasm.fclTransport(),
+        "fcl.authz": flowWasm.serviceAccountAuthz(),
         // This is here because FCL expects it, but it's not actually being used
         'flow.network': 'testnet',
         'accessNode.api': 'https://rest-testnet.onflow.org',
@@ -110,42 +111,52 @@ describe("FCL transport - collections", async () => {
 })
 
 describe("FCL transport - transactions", async () => {
-    beforeAll(prepareTests)
+    beforeAll(prepareTests);
 
-    function authorizationFunction(authAccount: InteractionAccount): InteractionAccount {
-        return {
-            ...authAccount,
-            addr: "f8d6e0586b0a20c7",
-            keyId: 0,
-            signingFunction: () => ({
-                addr: "0xf8d6e0586b0a20c7",
-                keyId: 0,
-                signature: ""
-            })
+    // language=Cadence
+    const helloWorldCadenceTx = `
+        transaction {
+            execute {
+                log("Hello World")
+            }
         }
-    }
+    `
 
     it('should send a transaction', async () => {
         const transactionId = await fcl.mutate({
-            // language=Cadence
-            cadence: `
-                transaction {
-                    execute {
-                        log("Hello World")
-                    }
-                }
-            `,
-            limit: 10,
-            payer: authorizationFunction,
-            authz: authorizationFunction,
-            proposer: authorizationFunction,
-            authorizations: []
+            cadence: helloWorldCadenceTx,
+            limit: 10
         });
 
-        expect(transactionId).toBeInstanceOf(String);
+        expect(transactionId).toBeTypeOf("string");
     });
 
-    it('should get transaction by ID', () => {
+    it('should get transaction by ID', async () => {
+        const transactionId = await fcl.mutate({
+            cadence: helloWorldCadenceTx,
+            limit: 10
+        });
 
+        const actual = await fcl.send([fcl.getTransaction(transactionId)]).then(fcl.decode);
+
+        // Omit some fields that are not specified in the docs.
+        // See: https://developers.flow.com/tools/clients/fcl-js/api#transactionobject
+        const expected: Omit<Transaction, "proposer" | "address" | "keyId" | "sequenceNumber"> = {
+            script: helloWorldCadenceTx,
+            authorizers: [],
+            envelopeSignatures: [],
+            gasLimit: 10,
+            proposalKey: {
+                sequenceNumber: 0,
+                keyId: 0,
+                address: "0000000000000000",
+            },
+            args: [],
+            referenceBlockId: "a20c602fbee6fe4491e116403e3258e7b7924609696ab2edb9a93eed2c29e445",
+            payer: "f8d6e0586b0a20c7",
+            payloadSignatures: []
+        }
+
+        expect(actual).toMatchObject(expected);
     });
 })
