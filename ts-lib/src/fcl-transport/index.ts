@@ -123,7 +123,7 @@ export function buildWasmTransport(internalGateway: InternalGateway) {
                         payer: ix.message.payer ?? "",
                         referenceBlockId: ix.message.refBlock ?? "",
                         script: ix.message.cadence ?? "",
-                        arguments: ix.message.arguments,
+                        arguments: ix.message.arguments.map(argumentId => JSON.stringify(ix.arguments[argumentId].asArgument)),
                     }))
                 }
             case InteractionTag.SCRIPT:

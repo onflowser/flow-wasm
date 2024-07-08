@@ -108,20 +108,29 @@ describe("FCL transport - blocks", async () => {
 })
 
 // language=Cadence
-const helloWorldCadenceTx = `
+const simpleCadenceTx = `
     transaction {
         execute {
             log("Hello World")
         }
     }
-`
+`;
+
+// language=Cadence
+const simpleArgsCadenceTx = `
+    transaction (say: String) {
+        execute {
+            log(say)
+        }
+    }
+`;
 
 describe("FCL transport - collections", async () => {
     beforeAll(prepareTests)
 
     it('should return collection by ID', async () => {
         const transactionId = await fcl.mutate({
-            cadence: helloWorldCadenceTx,
+            cadence: simpleCadenceTx,
             limit: 10
         });
 
@@ -147,9 +156,32 @@ describe("FCL transport - collections", async () => {
 describe("FCL transport - transactions", async () => {
     beforeAll(prepareTests);
 
-    it('should send a transaction and return status', async () => {
+    it('should execute a simple transaction', async () => {
         const transactionId = await fcl.mutate({
-            cadence: helloWorldCadenceTx,
+            cadence: simpleCadenceTx,
+            limit: 10
+        });
+
+        const status = await fcl.send([fcl.getTransactionStatus(transactionId)]).then(fcl.decode);
+
+        expect(status).toMatchObject({
+            blockId: expect.any(String),
+            statusCode: 0,
+            status: 4,
+            statusString: "SEALED",
+            events: [],
+            errorMessage: "",
+        })
+
+        expect(transactionId).toBeTypeOf("string");
+    });
+
+    it('should execute a simple transaction with arguments', async () => {
+        const transactionId = await fcl.mutate({
+            cadence: simpleArgsCadenceTx,
+            args: (arg: any, t: any) => [
+              arg("Hello from outside", t.String),
+            ],
             limit: 10
         });
 
@@ -169,7 +201,7 @@ describe("FCL transport - transactions", async () => {
 
     it('should get transaction by ID', async () => {
         const transactionId = await fcl.mutate({
-            cadence: helloWorldCadenceTx,
+            cadence: simpleCadenceTx,
             limit: 10
         });
 
@@ -178,7 +210,7 @@ describe("FCL transport - transactions", async () => {
         // Omit some fields that are not specified in the docs.
         // See: https://developers.flow.com/tools/clients/fcl-js/api#transactionobject
         const expected: Omit<Transaction, "proposer" | "address" | "keyId" | "sequenceNumber"> = {
-            script: helloWorldCadenceTx,
+            script: simpleCadenceTx,
             authorizers: [],
             envelopeSignatures: [],
             gasLimit: 10,

@@ -105,18 +105,24 @@ func serializeAccount(account *sdk.Account) interface{} {
 }
 
 type SendSignedTransactionRequest struct {
-	Script           string `json:"script"`
-	ReferenceBlockID string `json:"referenceBlockId"`
-	GasLimit         uint64 `json:"gasLimit"`
+	Script           string   `json:"script"`
+	ReferenceBlockID string   `json:"referenceBlockId"`
+	GasLimit         uint64   `json:"gasLimit"`
+	ArgsJSON         []string `json:"arguments"`
 }
 
 func (g *InternalGateway) sendSignedTransaction(this js.Value, args []js.Value) interface{} {
 	var request SendSignedTransactionRequest
 	err := json.Unmarshal([]byte(args[0].String()), &request)
 
+	deserializedArgs := make([][]byte, 0)
+	for _, arg := range request.ArgsJSON {
+		deserializedArgs = append(deserializedArgs, []byte(arg))
+	}
+
 	inputTx := &sdk.Transaction{
 		Script:             []byte(request.Script),
-		Arguments:          [][]byte{},
+		Arguments:          deserializedArgs,
 		ReferenceBlockID:   sdk.HexToID(request.ReferenceBlockID),
 		GasLimit:           request.GasLimit,
 		ProposalKey:        sdk.ProposalKey{},
@@ -420,11 +426,6 @@ func serializeBlock(block *sdk.Block) interface{} {
 		"blockSeals":           serializedBlockSeals,
 		"signatures":           []interface{}{}, // TODO: Implement
 	}
-}
-
-func (g *InternalGateway) getEvents(ctx context.Context, s string, u uint64, u2 uint64) ([]sdk.BlockEvents, error) {
-	//TODO implement me
-	panic("implement me")
 }
 
 func (g *InternalGateway) getCollection(this js.Value, args []js.Value) interface{} {
