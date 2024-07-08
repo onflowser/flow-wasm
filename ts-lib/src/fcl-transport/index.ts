@@ -36,6 +36,9 @@ export interface InternalGateway {
     sendSignedTransaction: (request: string) => JsResponse<string>;
     // https://github.com/onflow/fcl-js/pull/1420
     getNetworkParameters: () => JsResponse<NetworkParameters>;
+    executeScript: (request: string) => JsResponse<string>;
+    executeScriptAtHeight: (request: string) => JsResponse<string>;
+    executeScriptAtId: (request: string) => JsResponse<string>;
 }
 
 // TODO: Expand to handle error cases
@@ -43,11 +46,11 @@ type JsResponse<Value> = Value;
 
 export function buildWasmTransport(internalGateway: InternalGateway) {
     return async function transportWasm(
-        ix: Interaction | Promise<Interaction>,
+        _ix: Interaction | Promise<Interaction>,
         context: FclContext,
         _options: FclOptions
     ) {
-        ix = await ix;
+        const ix = await _ix;
         switch (ix.tag) {
             case InteractionTag.GET_ACCOUNT:
                 return {
@@ -122,6 +125,15 @@ export function buildWasmTransport(internalGateway: InternalGateway) {
                         script: ix.message.cadence ?? "",
                         arguments: ix.message.arguments,
                     }))
+                }
+            case InteractionTag.SCRIPT:
+                return {
+                    ...context.response(),
+                    tag: ix.tag,
+                    encodedData: JSON.parse(internalGateway.executeScript(JSON.stringify({
+                        script: ix.message.cadence,
+                        arguments: JSON.stringify(ix.message.arguments.map(argumentId => ix.arguments[argumentId].asArgument)),
+                    })))
                 }
             case InteractionTag.GET_NETWORK_PARAMETERS:
                 return {

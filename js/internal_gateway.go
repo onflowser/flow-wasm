@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/onflow/cadence"
+	jsoncdc "github.com/onflow/cadence/encoding/json"
 	sdk "github.com/onflow/flow-go-sdk"
 	"github.com/onflow/flow-go-sdk/crypto"
+	"github.com/onflow/flowkit/v2/arguments"
 	"github.com/onflow/flowkit/v2/gateway"
 	"syscall/js"
 )
@@ -50,6 +52,9 @@ func NewInternalGateway(emulator *gateway.EmulatorGateway) *InternalGateway {
 	target.Set("getNetworkParameters", js.FuncOf(gtw.getNetworkParameters))
 	target.Set("getTransactionResultsByBlockId", js.FuncOf(gtw.getTransactionResultsByBlockID))
 	target.Set("getTransactionResult", js.FuncOf(gtw.getTransactionResult))
+	target.Set("executeScript", js.FuncOf(gtw.executeScript))
+	target.Set("executeScriptAtHeight", js.FuncOf(gtw.executeScriptAtHeight))
+	target.Set("executeScriptAtId", js.FuncOf(gtw.executeScriptAtID))
 
 	return gtw
 }
@@ -263,19 +268,100 @@ func serializeTransactionResult(result *sdk.TransactionResult) interface{} {
 	}
 }
 
-func (g *InternalGateway) executeScript(ctx context.Context, bytes []byte, values []cadence.Value) (cadence.Value, error) {
-	//TODO implement me
-	panic("implement me")
+type ExecuteScriptRequest struct {
+	Script   string `json:"script"`
+	ArgsJSON string `json:"arguments"`
 }
 
-func (g *InternalGateway) executeScriptAtHeight(ctx context.Context, bytes []byte, values []cadence.Value, u uint64) (cadence.Value, error) {
-	//TODO implement me
-	panic("implement me")
+func (g *InternalGateway) executeScript(this js.Value, args []js.Value) interface{} {
+	var request ExecuteScriptRequest
+	err := json.Unmarshal([]byte(args[0].String()), &request)
+
+	if err != nil {
+		panic(err)
+	}
+
+	var cadenceArgs []cadence.Value
+
+	if request.ArgsJSON != "" {
+		cadenceArgs, err = arguments.ParseJSON(request.ArgsJSON)
+
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	result, err := g.emulator.ExecuteScript(context.Background(), []byte(request.Script), cadenceArgs)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return string(jsoncdc.MustEncode(result))
 }
 
-func (g *InternalGateway) executeScriptAtID(ctx context.Context, bytes []byte, values []cadence.Value, identifier sdk.Identifier) (cadence.Value, error) {
-	//TODO implement me
-	panic("implement me")
+type ExecuteScriptAtHeightRequest struct {
+	ExecuteScriptRequest
+	Height uint64 `json:"height"`
+}
+
+func (g *InternalGateway) executeScriptAtHeight(this js.Value, args []js.Value) interface{} {
+	var request ExecuteScriptAtHeightRequest
+	err := json.Unmarshal([]byte(args[0].String()), &request)
+
+	if err != nil {
+		panic(err)
+	}
+
+	var cadenceArgs []cadence.Value
+
+	if request.ArgsJSON != "" {
+		cadenceArgs, err = arguments.ParseJSON(request.ArgsJSON)
+
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	result, err := g.emulator.ExecuteScriptAtHeight(context.Background(), []byte(request.Script), cadenceArgs, request.Height)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return string(jsoncdc.MustEncode(result))
+}
+
+type ExecuteScriptAtID struct {
+	ExecuteScriptRequest
+	ID string `json:"id"`
+}
+
+func (g *InternalGateway) executeScriptAtID(this js.Value, args []js.Value) interface{} {
+	var request ExecuteScriptAtID
+	err := json.Unmarshal([]byte(args[0].String()), &request)
+
+	if err != nil {
+		panic(err)
+	}
+
+	var cadenceArgs []cadence.Value
+
+	if request.ArgsJSON != "" {
+		cadenceArgs, err = arguments.ParseJSON(request.ArgsJSON)
+
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	result, err := g.emulator.ExecuteScriptAtID(context.Background(), []byte(request.Script), cadenceArgs, sdk.HexToID(request.ID))
+
+	if err != nil {
+		panic(err)
+	}
+
+	return string(jsoncdc.MustEncode(result))
 }
 
 func (g *InternalGateway) getLatestBlock(this js.Value, args []js.Value) interface{} {
@@ -368,24 +454,4 @@ func (g *InternalGateway) getNetworkParameters(this js.Value, args []js.Value) i
 	return map[string]interface{}{
 		"chainId": sdk.Emulator.String(),
 	}
-}
-
-func (g *InternalGateway) getLatestProtocolStateSnapshot(ctx context.Context) ([]byte, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (g *InternalGateway) ping() error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (g *InternalGateway) waitServer(ctx context.Context) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (g *InternalGateway) secureConnection() bool {
-	//TODO implement me
-	panic("implement me")
 }

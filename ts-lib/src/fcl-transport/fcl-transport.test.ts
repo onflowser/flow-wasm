@@ -4,10 +4,7 @@ import "../../../dist/wasm_exec.js";
 import {
     Account,
     Block,
-    CollectionGuarantee,
-    InteractionAccount,
     Transaction,
-    TransactionStatus
 } from "@onflow/typedefs";
 import {HashAlgorithm, SignatureAlgorithm} from "@onflow/typedefs/src";
 import {runTestingFlowWasm} from "../test-utils";
@@ -197,5 +194,42 @@ describe("FCL transport - transactions", async () => {
         }
 
         expect(actual).toMatchObject(expected);
+    });
+});
+
+// language=Cadence
+const helloWorldCadenceScript = `
+    access(all) fun main(): String {
+      return "Hello World"
+    }
+`
+
+// language=Cadence
+const helloWorldWithArgsCadenceScript = `
+    access(all) fun main(say: String): String {
+      return say
+    }
+`
+
+describe("FCL transport - scripts", async () => {
+    beforeAll(prepareTests);
+
+    it('should execute a simple script', async () => {
+        const result = await fcl.query({
+            cadence: helloWorldCadenceScript,
+        });
+
+        expect(result).toEqual("Hello World")
+    });
+
+    it('should execute a simple script with args', async () => {
+        const result = await fcl.query({
+            cadence: helloWorldWithArgsCadenceScript,
+            args: (arg: any, t: any) => [
+                arg("Hello from outside", t.String)
+            ]
+        });
+
+        expect(result).toEqual("Hello from outside")
     });
 })
