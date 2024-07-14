@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/onflow/flow-emulator/storage/memstore"
 	"github.com/onflow/flowkit/v2"
 	"github.com/onflow/flowkit/v2/config"
 	"github.com/onflow/flowkit/v2/deps"
+	"github.com/onflow/flowkit/v2/output"
 	jsFlow "github.com/onflowser/flow-cli-wasm/js"
 	"github.com/onflowser/flow-cli-wasm/logging"
 	"syscall/js"
@@ -43,6 +47,7 @@ func main() {
 	js.Global().Set("gateway", internalGateway.JsValue())
 	js.Global().Set("getLogs", js.FuncOf(w.getLogs))
 	js.Global().Set("install", js.FuncOf(w.install))
+	js.Global().Set("deploy", js.FuncOf(w.deploy))
 
 	// Indicate the emulator started and APIs were initialized
 	js.Global().Call("onStarted")
@@ -139,4 +144,34 @@ func (w *FlowWasm) getLogs(this js.Value, args []js.Value) interface{} {
 	}
 
 	return string(res)
+}
+
+func (w *FlowWasm) deploy(this js.Value, args []js.Value) interface{} {
+	executor := func() (js.Value, error) {
+		contracts, err := w.kit.DeployProject(context.Background(), flowkit.UpdateExistingContract(true))
+		if err != nil {
+			var projectErr *flowkit.ProjectDeploymentError
+			if errors.As(err, &projectErr) {
+				for name, err := range projectErr.Contracts() {
+					w.logger.Info(fmt.Sprintf(
+						"%s Failed to deploy contract %s: %s",
+						output.ErrorEmoji(),
+						name,
+						err.Error(),
+					))
+				}
+				return js.Null(), fmt.Errorf("failed deploying all contracts")
+			}
+
+			return js.Null(), err
+		}
+
+		for _, contract := range contracts {
+			w.logger.Info(fmt.Sprintf("deployed %s contract", contract.Name))
+		}
+
+		return js.Null(), err
+	}
+
+	return jsFlow.AsyncWork(executor)
 }
