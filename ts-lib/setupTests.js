@@ -1,3 +1,3 @@
-const { execSync } = require('child_process');
+const { execSync } = require("child_process");
 
-execSync('cd .. && npm run build', { stdio: 'inherit' });
+execSync("cd .. && npm run build", { stdio: "inherit" });

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -12,33 +12,41 @@
     <script src="https://unpkg.com/@isomorphic-git/lightning-fs"></script>
     <script src="https://unpkg.com/isomorphic-git"></script>
     <script type="module">
-      import { FclGateway, FlowWasm, LightningFileSystem, WindowPrompter } from "./dist/flow-wasm.mjs"
-      import http from 'https://unpkg.com/isomorphic-git@beta/http/web/index.js'
+      import {
+        FclGateway,
+        FlowWasm,
+        LightningFileSystem,
+        WindowPrompter,
+      } from "./dist/flow-wasm.mjs";
+      import http from "https://unpkg.com/isomorphic-git@beta/http/web/index.js";
 
-      const fs = new LightningFS('fs');
+      const fs = new LightningFS("fs");
 
-      const dir = '/flow-nft-scaffold-4';
+      const dir = "/flow-nft-scaffold-4";
 
       try {
-        await fs.promises.stat(dir)
+        await fs.promises.stat(dir);
       } catch (rootDirNotFoundError) {
         // Stat throws an error if directory doesn't exist
         await git.clone({
           fs,
           http,
           dir,
-          url: 'https://github.com/onflowser/flow-nft-scaffold',
-          corsProxy: 'https://cors.isomorphic-git.org',
-          ref: 'main',
+          url: "https://github.com/onflowser/flow-nft-scaffold",
+          corsProxy: "https://cors.isomorphic-git.org",
+          ref: "main",
           singleBranch: true,
-          depth: 10
+          depth: 10,
         });
       }
 
       window.mainnet = new FclGateway("mainnet");
 
       const goRuntime = new Go();
-      const wasmModule = await WebAssembly.instantiateStreaming(fetch("./dist/flow.wasm"), goRuntime.importObject);
+      const wasmModule = await WebAssembly.instantiateStreaming(
+        fetch("./dist/flow.wasm"),
+        goRuntime.importObject,
+      );
 
       const flowWasm = new FlowWasm({
         global: window,
@@ -49,7 +57,7 @@
           mainnet: new FclGateway("mainnet"),
           previewnet: new FclGateway("previewnet"),
           testnet: new FclGateway("testnet"),
-        }
+        },
       });
 
       window.flowWasm = flowWasm;

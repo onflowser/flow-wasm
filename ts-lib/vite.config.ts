@@ -21,8 +21,8 @@ type Format = "es" | "cjs";
 
 const fileNameLookup = new Map<Format, string>([
   ["es", `${getPackageName()}.mjs`],
-  ["cjs", `${getPackageName()}.cjs`]
-])
+  ["cjs", `${getPackageName()}.cjs`],
+]);
 
 const formats = Array.from(fileNameLookup.keys());
 
@@ -34,11 +34,11 @@ module.exports = defineConfig({
       entry: path.resolve(__dirname, "src/index.ts"),
       name: getPackageNameCamelCase(),
       formats,
-      fileName: (format) => {
+      fileName: format => {
         const filename = fileNameLookup.get(format as Format);
 
         if (!filename) {
-          throw new Error("Filename not found for format: " + format)
+          throw new Error("Filename not found for format: " + format);
         }
 
         return filename;
@@ -46,7 +46,7 @@ module.exports = defineConfig({
     },
   },
   test: {
-    setupFiles: ['./setupTests.js'],
+    setupFiles: ["./setupTests.js"],
   },
   resolve: {
     alias: [
